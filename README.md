@@ -1,89 +1,129 @@
-# requirements-elicitation Skill
+# Requirements Elicitation Skill
 
-一个用于“半结构化需求访谈”的可复用 Skill。它会在多轮对话中持续维护访谈框架，动态补全信息、识别冲突并在完成时输出结构化需求总结。
+一个用于**半结构化需求访谈**的 Agent Skill。  
+它可以把“模糊想法”逐轮转成结构化需求框架，并在完成时产出可落地的需求总结。
 
-## 目录结构
+## 这个 Skill 能做什么
+
+- 用多轮访谈方式逐步澄清产品目标、用户、流程、功能、约束与优先级
+- 维护可追踪的访谈框架（带证据与置信度）
+- 在访谈过程中动态增删/调整话题
+- 处理矛盾信息并优先澄清
+- 最终输出：
+  - 完整访谈框架（JSON）
+  - 结构化需求总结报告（Markdown）
+
+## 仓库结构
 
 ```text
 .
-├── SKILL.md
+├── SKILL.md                        # Skill 入口与主流程
 ├── assets/
 │   ├── interview_framework_schema.json
 │   └── requirements_report_format.md
-├── references/
+├── references/                     # 各步骤规则
 │   ├── checkpoints.md
-│   ├── conflict_resolution.md
+│   ├── maintain_framework.md
 │   ├── fill_framework.md
+│   ├── select_current_topic.md
 │   ├── generate_speak.md
 │   ├── intent_routing.md
-│   ├── maintain_framework.md
-│   ├── select_current_topic.md
-│   ├── state_cleanup.md
-│   ├── state_lifecycle.md
-│   ├── state_management.md
-│   ├── state_storage_rules.md
-│   └── topic_dependency_map.md
-└── examples/
-    ├── contradiction_resolution_example.md
-    ├── fill_framework_example.md
-    ├── generate_speak_example.md
-    ├── intent_routing_example.md
-    ├── modify_framework_example.md
+│   ├── topic_dependency_map.md
+│   ├── conflict_resolution.md
+│   └── state_*.md
+└── examples/                       # 输入输出样例
     ├── new_framework_example.md
+    ├── fill_framework_example.md
+    ├── modify_framework_example.md
     ├── select_current_topic_example.md
+    ├── generate_speak_example.md
+    ├── contradiction_resolution_example.md
+    ├── intent_routing_example.md
     └── summarize_example.md
 ```
 
-## Skill 能力
+## 工作方式（核心执行链路）
 
-- 通过意图识别决定当前输入是补槽、澄清、切题还是结构更新信号
-- 支持初始化与动态维护访谈框架（增删主题/字段、合并拆分主题）
-- 在填充信息时保留“已确认/待确认/冲突”状态
-- 自动检测前后矛盾并优先发起澄清
-- 在完成条件满足后输出最终框架与结构化需求报告
+每轮对话按以下步骤运行：
 
-## 使用方式
+1. 加载会话状态  
+2. 判断阶段（start / runtime / complete）  
+3. 意图分类与产品类型路由  
+4. 维护访谈框架结构  
+5. 填充新信息到 slots  
+6. 检测并处理矛盾  
+7. 选择下一话题  
+8. 生成下一轮提问  
+9. 持久化状态  
 
-1. 将整个目录作为一个 Skill 包上传或放入你的 Skill 仓库。
-2. 确保运行环境能读取 `SKILL.md` 及其引用的 `assets/`、`references/`、`examples/` 文件。
-3. 在对话中给出一个产品想法或功能设想，Skill 会自动进入访谈流程：
-   - 检查当前阶段
-   - 识别意图并路由
-   - 维护框架结构
-   - 填充信息并处理冲突
-   - 选择当前主题并生成下一轮问题
-4. 当完成条件达成后，Skill 会停止追问并输出结构化总结。
+完成条件满足后，输出最终框架与总结报告，并清理会话状态。
 
-## 打包与发布建议
+## 如何使用
 
-参考社区常见 Skill 仓库风格，保持以下原则：
+## 1) 克隆仓库
 
-- 仓库根目录保留 `SKILL.md` 作为唯一入口
-- 规则说明、示例、资产文件分目录管理，避免全部写入单文件
-- 版本迭代时优先保持路径稳定，避免破坏已有引用
-- 发布时按目录原样上传，不要只传 `SKILL.md`
-
-推荐使用 zip 包分发：
-
-1. 在仓库根目录打包整个目录。
-2. 解压后应直接看到 `SKILL.md` 与三个子目录。
-3. 在目标平台导入后先做一次最小用例验证。
-
-## 最小示例
-
-用户输入：
-
-```text
-我们要做一个校园二手交易小程序，先在校内试点。
+```bash
+git clone https://github.com/EchoAran/requirements-elicitation-skill.git
+cd requirements-elicitation-skill
 ```
 
-Skill 输出行为（示意）：
+## 2) 作为 Skill 挂载
 
-- 识别产品类型与范围
-- 初始化访谈框架
-- 先追问用户、交易流程、履约与风控约束
-- 在信息充分后生成结构化需求摘要
+把此目录作为一个 Skill 目录提供给你的 Agent 运行环境（需支持读取 `SKILL.md` 与同级资源文件）。
 
-## 许可证
+关键点：
 
-当前 `SKILL.md` 中声明为 `Proprietary`。如需开源发布，请按你的实际授权策略调整。
+- Agent 先读取 `SKILL.md` 的 metadata 做发现与触发
+- 命中后加载 `SKILL.md` 主体流程
+- 再按需读取 `references/`、`assets/`、`examples/` 中文件
+
+## 3) 发起访谈
+
+在对话中给出一个初始需求，例如：
+
+- “我想做一个校园二手交易 App，请帮我做需求访谈。”
+- “我们要做企业内部审批工具，帮我澄清第一版需求。”
+
+之后按 Skill 的提问逐轮回答即可。
+
+## 输入与输出
+
+### 输入
+
+- 用户自然语言需求描述（可模糊、可分阶段补充）
+
+### 输出
+
+- 运行中：单轮聚焦问题 + 必要确认
+- 完成时：
+  - `final_interview_framework`（结构化 JSON）
+  - `requirements_summary_report`（按模板输出的 Markdown 报告）
+
+## 可定制项
+
+- 话题策略：`references/maintain_framework.md`
+- 选题路由：`references/select_current_topic.md` + `references/topic_dependency_map.md`
+- 填充与证据规则：`references/fill_framework.md`
+- 矛盾处理：`references/conflict_resolution.md`
+- 完成判定：`references/checkpoints.md`
+- 总结模板：`assets/requirements_report_format.md`
+
+## 状态管理
+
+默认使用文件状态持久化，目录约定见：
+
+- `references/state_management.md`
+- `references/state_storage_rules.md`
+- `references/state_lifecycle.md`
+- `references/state_cleanup.md`
+
+## 适用场景
+
+- 0→1 产品探索
+- 模糊需求澄清
+- PRD 前置访谈
+- 跨角色需求对齐（产品/业务/研发/运营）
+
+## License
+
+Proprietary（见 `SKILL.md` frontmatter）。
