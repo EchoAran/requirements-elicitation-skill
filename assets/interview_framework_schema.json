@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "InterviewFramework",
+  "type": "object",
+  "required": [
+    "phase",
+    "current_topic_id",
+    "topics",
+    "open_questions"
+  ],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "enum": ["start", "runtime", "complete"]
+    },
+    "current_topic_id": {
+      "type": ["string", "null"]
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "priority", "status", "slots"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "coverage_score": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": ["unstarted", "active", "partially_filled", "sufficient", "blocked", "skipped"]
+          },
+          "notes": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "blocking_issues": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "value", "confidence", "status"],
+              "properties": {
+                "name": { "type": "string" },
+                "value": {},
+                "confidence": {
+                  "type": "string",
+                  "enum": ["confirmed", "supported_inference", "open"]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["empty", "filled", "open_question", "conflicted"]
+                },
+                "evidence": {
+                  "type": ["string", "null"]
+                },
+                "last_updated": {
+                  "type": ["string", "null"]
+                },
+                "convergence_score": {
+                  "type": ["number", "null"],
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "information_density": {
+                  "type": ["string", "null"],
+                  "enum": ["low", "medium", "high", null]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "efficiency_metrics": {
+      "type": "object",
+      "properties": {
+        "total_turns": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "avg_slots_filled_per_turn": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "estimated_completion": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
