@@ -84,7 +84,7 @@ We must include in app payment in the first release.
       "resolution_note": null,
       "resolved_at": null
     }
-  },
+  ],
   "open_questions": [
     {
       "id": "oq_0001",
