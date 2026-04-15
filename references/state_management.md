@@ -52,7 +52,7 @@ Every state-changing turn must commit with all-or-nothing semantics:
 5. Snapshot current state to `checkpoints/v{n}/` before replacing live files.
 6. Write a complete immutable revision under `state/sessions/{session_id}/revisions/{revision_id}/`.
 7. Atomically switch `state/sessions/{session_id}/CURRENT` to `{revision_id}`.
-8. Update `commit.json` marker (and optional legacy mirror files).
+8. Update `commit.json` marker and refresh optional legacy mirror files as best-effort compatibility cache.
 
 `commit.json` required fields:
 - `session_id`
@@ -75,6 +75,7 @@ Every state-changing turn must commit with all-or-nothing semantics:
 - Keep checkpoints for the latest 3 to 5 committed versions.
 - On corruption or migration failure, rollback from latest checkpoint.
 - Read path must resolve from `CURRENT` first; direct root-level mirrors are fallback only.
+- Root-level mirror files are not atomic commit targets and must not be used as authoritative read source.
 - Recovery order:
   1. Resolve `CURRENT` revision and validate revision files
   2. If invalid, rollback to latest checkpoint

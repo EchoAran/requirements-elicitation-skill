@@ -85,7 +85,7 @@ def write_revision(session_dir: Path, framework: Dict[str, Any], history: List[D
     return revision_id
 
 
-def create_pre_migration_checkpoint(session_dir: Path) -> None:
+def create_pre_migration_checkpoint(session_dir: Path, source_root: Path) -> None:
     checkpoints_dir = session_dir / "checkpoints"
     checkpoints_dir.mkdir(parents=True, exist_ok=True)
     versions = [
@@ -97,7 +97,9 @@ def create_pre_migration_checkpoint(session_dir: Path) -> None:
     target = checkpoints_dir / f"v{next_v}"
     target.mkdir(parents=True, exist_ok=True)
     for name in ["framework.json", "history.json", "metadata.json", "commit.json"]:
-        src = session_dir / name
+        src = source_root / name
+        if not src.exists():
+            src = session_dir / name
         if src.exists():
             shutil.copy2(src, target / name)
 
@@ -242,7 +244,7 @@ def main() -> int:
         return 1
 
     try:
-        create_pre_migration_checkpoint(session_dir)
+        create_pre_migration_checkpoint(session_dir, revision_dir)
         framework = migrate_framework(framework, metadata, target_schema_version)
         history = migrate_history(history, metadata, args.session_id)
         metadata = migrate_metadata_defaults(metadata, args.session_id, target_schema_version)

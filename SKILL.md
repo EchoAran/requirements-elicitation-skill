@@ -1,5 +1,5 @@
 ---
-name: requirements-elicitation
+name: requirements-elicitation-skill
 description: >-
   Conduct semi-structured requirements elicitation interviews for product and
   software ideas. Use when a user wants to discuss an early product concept,
@@ -13,7 +13,7 @@ compatibility: >-
   files. No external network access required.
 schema_version: 2.0.0
 metadata:
-  created: "2026-04-15"
+  created: "2026-04-07"
   last_reviewed: "2026-04-15"
   review_interval_days: 30
 ---
@@ -49,8 +49,9 @@ At every turn, execute the following sequence:
 6. Select the current topic.
 7. Generate the next interview utterance.
 8. Persist State: Save updated framework and history (see `references/state_management.md`)
-   - use transactional commit (`state/temp/{session_id}` -> atomic rename)
-   - write `commit.json` after successful commit
+   - write complete revision under `state/sessions/{session_id}/revisions/`
+   - atomically switch `state/sessions/{session_id}/CURRENT`
+   - update legacy mirror files as best-effort compatibility cache
 
 Stop the loop only when the completion conditions in `references/checkpoints.md` are satisfied.
 

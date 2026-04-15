@@ -72,8 +72,12 @@ def create_checkpoint(session_dir: Path, keep: int) -> None:
     next_v = latest_checkpoint_version(checkpoints_dir) + 1
     target = checkpoints_dir / f"v{next_v}"
     target.mkdir(parents=True, exist_ok=True)
+    revision_id = read_current_revision(session_dir)
+    source_root = (session_dir / "revisions" / revision_id) if revision_id else session_dir
     for name in ["framework.json", "history.json", "metadata.json", "commit.json"]:
-        src = session_dir / name
+        src = source_root / name
+        if not src.exists():
+            src = session_dir / name
         if src.exists():
             shutil.copy2(src, target / name)
 
@@ -434,15 +438,20 @@ def main() -> int:
     )
 
     try:
-        # Keep legacy live files for compatibility/debug visibility.
-        tmp_framework.replace(session_dir / "framework.json")
-        tmp_history.replace(session_dir / "history.json")
-        tmp_metadata.replace(session_dir / "metadata.json")
-        write_json(session_dir / "commit.json", commit)
+        # 1) write new revision and atomically switch CURRENT first (authoritative read path)
         revision_id = write_revision_commit(session_dir, framework, history, metadata, commit)
         persist_commit_artifact(session_dir, commit, framework, history, metadata)
         metadata["last_successful_commit"]["revision_id"] = revision_id
         write_json(session_dir / "revisions" / revision_id / "metadata.json", metadata)
+
+        # 2) best-effort legacy mirror refresh for compatibility/debug only (non-authoritative)
+        try:
+            tmp_framework.replace(session_dir / "framework.json")
+            tmp_history.replace(session_dir / "history.json")
+            tmp_metadata.replace(session_dir / "metadata.json")
+            write_json(session_dir / "commit.json", commit)
+        except Exception as mirror_exc:
+            print(f"[WARN] legacy mirror refresh failed after CURRENT switch: {mirror_exc}")
         pending_commit_path.unlink(missing_ok=True)
     except Exception as exc:
         print(f"[ERROR] commit replace failed: {exc}")

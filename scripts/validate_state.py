@@ -107,9 +107,9 @@ def validate_history(history: Any) -> List[str]:
         turn_id = item.get("turn_id")
         if not isinstance(turn, int) or turn <= 0:
             errors.append(f"history turn must be positive integer, got={turn}")
-        elif previous_turn is not None and turn != previous_turn + 1:
+        elif previous_turn is not None and turn <= previous_turn:
             errors.append(
-                f"history turn sequence mismatch: previous={previous_turn}, current={turn}, expected={previous_turn + 1}"
+                f"history turn sequence mismatch: previous={previous_turn}, current={turn}, expected strictly increasing"
             )
         previous_turn = turn if isinstance(turn, int) else previous_turn
         if not isinstance(turn_id, str):

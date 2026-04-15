@@ -111,7 +111,7 @@ If step 3 fails, do not mutate live files.
 
 - `framework.json` validates against schema.
 - `history.json` is ordered and has unique `turn_id`.
-- `history.turn` must be strictly increasing by 1, but the first turn value does not have to be 1 after retention truncation.
+- `history.turn` must be strictly increasing (monotonic), but it does not need to start from 1 after retention truncation.
 - `metadata.json` includes all required operational fields.
 
 ### Cross-file validation
