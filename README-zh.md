@@ -94,6 +94,7 @@ chmod +x install.sh
 │   ├── check_state_drift.py                # 漂移检测 + 迁移 + 回滚
 │   ├── security_scan_state.py              # 状态文件敏感信息扫描
 │   ├── cleanup_sessions.py                 # 两阶段归档/删除生命周期清理
+│   ├── storage_adapter.py                  # 最小存储适配器契约 + 文件后端实现
 │   └── run_state_tests.py                  # 状态层回归测试运行脚本
 ├── examples/
 │   ├── new_framework_example.md
@@ -143,6 +144,8 @@ chmod +x install.sh
 - 通过 `checkpoints/v{n}` 保留回滚快照。
 - 两阶段清理生命周期：
   - `active -> closed -> archive -> delete`
+- 存储可移植性：
+  - 核心持久化可抽象为 `StorageAdapter` 契约（`load_current`、`commit_revision`、`mark_closed`、`archive_session`）
 
 ## 工具安装目标路径
 
