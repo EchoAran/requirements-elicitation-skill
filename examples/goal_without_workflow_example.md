@@ -14,5 +14,5 @@ We need to increase enterprise customer retention this year.
 ## Good next utterance pattern
 
 ```text
-目标很清晰。为把它落到需求上，我先确认一个最关键点：你希望哪类用户通过什么核心流程提升留存？
+The goal is clear. To translate it into actionable requirements, I need one key clarification first: which user segment should improve retention through which core workflow?
 ```

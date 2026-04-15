@@ -1,149 +1,162 @@
 # Requirements Elicitation Skill
 
-一个用于**半结构化需求访谈**的 Agent Skill。  
-它可以把“模糊想法”逐轮转成结构化需求框架，并在完成时产出可落地的需求总结。
+[Chinese Version](./README-zh.md)
 
-## 这个 Skill 能做什么
+This repository provides a production-oriented, stateful skill for **semi-structured requirements elicitation interviews**.
+It helps agents turn vague product ideas into traceable, structured requirement artifacts.
 
-- 用多轮访谈方式逐步澄清产品目标、用户、流程、功能、约束与优先级
-- 维护可追踪的访谈框架（带证据与置信度）
-- 在访谈过程中动态增删/调整话题
-- 处理矛盾信息并优先澄清
-- 最终输出：
-  - 完整访谈框架（JSON）
-  - 结构化需求总结报告（Markdown）
+## What This Skill Does
+- Runs adaptive multi-turn interviews instead of one-shot questionnaires.
+- Maintains an interview framework with explicit confidence and evidence.
+- Supports dynamic topic updates as requirements evolve.
+- Detects, records, and resolves requirement contradictions.
+- Produces two final artifacts:
+  - `final_interview_framework` (JSON)
+  - `requirements_summary_report` (Markdown)
 
-## 仓库结构
+## Supported Tools
 
-```text
-.
-├── SKILL.md                        # Skill 入口与主流程
-├── assets/
-│   ├── interview_framework_schema.json
-│   └── requirements_report_format.md
-├── references/                     # 各步骤规则
-│   ├── checkpoints.md
-│   ├── maintain_framework.md
-│   ├── fill_framework.md
-│   ├── select_current_topic.md
-│   ├── generate_speak.md
-│   ├── intent_routing.md
-│   ├── topic_dependency_map.md
-│   ├── conflict_resolution.md
-│   └── state_*.md
-├── scripts/
-│   ├── commit_state.py             # 事务式状态提交（tmp + checkpoint + commit.json）
-│   ├── validate_state.py           # 状态文件与跨文件一致性校验
-│   ├── check_state_drift.py        # schema drift 检查与迁移
-│   ├── security_scan_state.py      # 状态文件敏感信息扫描
-│   └── cleanup_sessions.py         # 两阶段归档/删除清理
-└── examples/                       # 输入输出样例
-    ├── new_framework_example.md
-    ├── fill_framework_example.md
-    ├── modify_framework_example.md
-    ├── select_current_topic_example.md
-    ├── generate_speak_example.md
-    ├── contradiction_resolution_example.md
-    ├── intent_routing_example.md
-    ├── summarize_example.md
-    ├── frequent_topic_switch_example.md
-    ├── refusal_to_answer_example.md
-    ├── conflicting_priorities_example.md
-    └── goal_without_workflow_example.md
-```
+This skill includes installer scripts that support usage across:
+- Claude Code
+- GitHub Copilot (same global skill path as Claude Code)
+- Cursor (via generated `.mdc` adapter rule)
+- Windsurf (via generated rule markdown)
+- Codex CLI
+- Gemini CLI
+- Kiro
 
-## 工作方式（核心执行链路）
+The installer writes links/copies into standard skill directories and generates rule adapters for Cursor/Windsurf.
 
-每轮对话按以下步骤运行：
+## Quick Start
 
-1. 加载会话状态  
-2. 判断阶段（start / runtime / complete）  
-3. 意图分类与产品类型路由  
-4. 维护访谈框架结构  
-5. 填充新信息到 slots  
-6. 检测并处理矛盾  
-7. 选择下一话题  
-8. 生成下一轮提问  
-9. 持久化状态  
-
-完成条件满足后，输出最终框架与总结报告，并清理会话状态。
-
-补充说明：
-
-- 已支持更细粒度意图分类（含约束声明、优先级表达、例外场景）
-- 已支持更广的产品类型起始路由（含 B2B SaaS、AI Copilot、教育、平台工具、数据分析、IoT）
-- 完成判定采用“清单 + 分数阈值（coverage/convergence/estimated_completion）”
-- 证据模型支持多条 evidence 链路，便于追溯
-
-## 如何使用
-
-## 1) 克隆仓库
-
+### 1) Clone
 ```bash
 git clone https://github.com/EchoAran/requirements-elicitation-skill.git
 cd requirements-elicitation-skill
 ```
 
-## 2) 作为 Skill 挂载
+### 2) Install (Unix/macOS)
+```bash
+chmod +x install.sh
+./install.sh
+```
 
-把此目录作为一个 Skill 目录提供给你的 Agent 运行环境（需支持读取 `SKILL.md` 与同级资源文件）。
+Optional:
+```bash
+./install.sh --dry-run
+./install.sh --uninstall
+```
 
-关键点：
+### 3) Install (Windows PowerShell)
+```powershell
+.\install.ps1
+```
 
-- Agent 先读取 `SKILL.md` 的 metadata 做发现与触发
-- 命中后加载 `SKILL.md` 主体流程
-- 再按需读取 `references/`、`assets/`、`examples/` 中文件
+Optional:
+```powershell
+.\install.ps1 -DryRun
+.\install.ps1 -Uninstall
+```
 
-## 3) 发起访谈
+### 4) Run
 
-在对话中给出一个初始需求，例如：
+Start your agent and trigger a requirements interview, for example:
+- "Help me run a requirements interview for a campus marketplace app."
+- "Please clarify MVP requirements for our internal approval tool."
 
-- “我想做一个校园二手交易 App，请帮我做需求访谈。”
-- “我们要做企业内部审批工具，帮我澄清第一版需求。”
+## Repository Structure
+```text
+.
+├── SKILL.md                                # Skill frontmatter + orchestration flow
+├── README.md                               # English documentation
+├── README-zh.md                            # Chinese documentation
+├── install.sh                              # Unix/macOS installer for multi-tool usage
+├── install.ps1                             # PowerShell installer for multi-tool usage
+├── assets/
+│   ├── interview_framework_schema.json     # Runtime schema (v2)
+│   └── requirements_report_format.md       # Final report template
+├── references/
+│   ├── checkpoints.md
+│   ├── conflict_resolution.md
+│   ├── fill_framework.md
+│   ├── generate_speak.md
+│   ├── intent_routing.md
+│   ├── maintain_framework.md
+│   ├── select_current_topic.md
+│   ├── topic_dependency_map.md
+│   ├── state_management.md
+│   ├── state_storage_rules.md
+│   ├── state_lifecycle.md
+│   └── state_cleanup.md
+├── scripts/
+│   ├── commit_state.py                     # Transactional commit (tmp + checkpoint + commit.json)
+│   ├── validate_state.py                   # Schema + cross-file consistency validation
+│   ├── check_state_drift.py                # Drift detection + migration + rollback
+│   ├── security_scan_state.py              # Sensitive-content scan for state files
+│   ├── cleanup_sessions.py                 # Two-phase archive/delete lifecycle cleanup
+│   └── migrate_examples_to_v2.py           # Example migration helper
+├── examples/
+│   ├── new_framework_example.md
+│   ├── fill_framework_example.md
+│   ├── modify_framework_example.md
+│   ├── select_current_topic_example.md
+│   ├── generate_speak_example.md
+│   ├── contradiction_resolution_example.md
+│   ├── intent_routing_example.md
+│   ├── summarize_example.md
+│   ├── frequent_topic_switch_example.md
+│   ├── refusal_to_answer_example.md
+│   ├── conflicting_priorities_example.md
+│   └── goal_without_workflow_example.md
+└── tests/
+    ├── README.md
+    └── state_cases/
+        ├── 01_normal_persistence_case.json
+        ├── 02_interrupted_write_recovery_case.json
+        ├── 03_duplicate_turn_retry_case.json
+        └── 04_old_schema_migration_case.json
+```
 
-之后按 Skill 的提问逐轮回答即可。
+## Runtime Loop
 
-## 输入与输出
+For each user turn, the skill runs:
+1. Load and validate session state.
+2. Detect phase (`start`, `runtime`, `complete`).
+3. Route intent and product type.
+4. Maintain framework structure.
+5. Fill grounded slot values.
+6. Detect and register contradictions.
+7. Select next topic.
+8. Generate one focused next utterance.
+9. Persist state with transactional commit.
 
-### 输入
+## State and Traceability Model (v2)
+- `schema_version` and `state_version` are explicit.
+- Evidence is a strict object array:
+  - `turn_id`
+  - `excerpt`
+  - `timestamp`
+  - `confidence_note`
+- Retry-safe writes use stable `turn_id`.
+- `commit.json` records the last successful commit pointer.
+- `checkpoints/v{n}` keep rollback snapshots.
+- Two-phase cleanup lifecycle:
+  - `active -> closed -> archive -> delete`
 
-- 用户自然语言需求描述（可模糊、可分阶段补充）
+## Tool Install Targets
 
-### 输出
+The installer creates links/copies for:
+- `~/.claude/skills/<skill-name>` (Claude Code + Copilot compatibility path)
+- `~/.agents/skills/<skill-name>` (universal path for Codex CLI / Gemini CLI / Kiro workflows)
+- `~/.codex/skills/<skill-name>` (optional explicit path)
+- `~/.gemini/skills/<skill-name>` (optional explicit path)
+- `~/.kiro/skills/<skill-name>` (optional explicit path)
 
-- 运行中：单轮聚焦问题 + 必要确认
-- 完成时：
-  - `final_interview_framework`（结构化 JSON）
-  - `requirements_summary_report`（按模板输出的 Markdown 报告）
+The installer also generates:
+- Cursor adapter rule: `.cursor/rules/<skill-name>.mdc` (or `CURSOR_RULES_DIR`)
+- Windsurf adapter rule: `.windsurf/rules/<skill-name>.md` (or `WINDSURF_RULES_DIR`)
 
-## 可定制项
-
-- 话题策略：`references/maintain_framework.md`
-- 选题路由：`references/select_current_topic.md` + `references/topic_dependency_map.md`
-- 填充与证据规则：`references/fill_framework.md`
-- 矛盾处理：`references/conflict_resolution.md`
-- 完成判定：`references/checkpoints.md`
-- 总结模板：`assets/requirements_report_format.md`
-
-## 状态管理
-
-默认使用文件状态持久化，目录约定见：
-
-- `references/state_management.md`
-- `references/state_storage_rules.md`
-- `references/state_lifecycle.md`
-- `references/state_cleanup.md`
-
-补充状态规范：
-
-- 事务提交：先写 `state/temp/{session_id}` 三个 tmp，再统一替换正式文件
-- 提交锚点：每次成功提交写 `commit.json`（含 hash 与版本）
-- 快照恢复：写入前创建 `checkpoints/v{n}`，默认保留最近 3~5 个
-- 两阶段回收：完成后先 `closed`，再按策略归档和延迟删除
-- 幂等写入：每轮使用稳定 `turn_id`，避免 Step 8 重试导致重复追加
-
-## 脚本入口
-
+## Script Entrypoints
 ```bash
 python scripts/validate_state.py --state-root state --session-id <SESSION_ID>
 python scripts/check_state_drift.py --state-root state --session-id <SESSION_ID> --migrate
@@ -151,13 +164,20 @@ python scripts/security_scan_state.py --state-root state
 python scripts/cleanup_sessions.py --state-root state --archive-days 30 --delete-days 90
 ```
 
-## 适用场景
+## Test Cases
 
-- 0→1 产品探索
-- 模糊需求澄清
-- PRD 前置访谈
-- 跨角色需求对齐（产品/业务/研发/运营）
+State-focused regression scenarios are in `tests/state_cases/`:
+- Normal persistence
+- Interrupted write recovery
+- Duplicate-turn retry idempotency
+- Old-schema migration and rollback
+
+## Compatibility Notes
+- This repository ships canonical skill content in `SKILL.md`.
+- Cursor/Windsurf support is provided through generated adapter rules.
+- If your team uses custom paths, set:
+  - `CURSOR_RULES_DIR`
+  - `WINDSURF_RULES_DIR`
 
 ## License
-
-Proprietary（见 `SKILL.md` frontmatter）。
+Proprietary (see `SKILL.md` frontmatter).

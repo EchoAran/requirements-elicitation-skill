@@ -1,6 +1,6 @@
 {
   "name": "duplicate_turn_retry_case",
-  "goal": "验证 Step 8 重试不会重复追加同一 turn",
+  "goal": "Verify Step 8 retry idempotency does not append the same turn twice.",
   "inputs": {
     "session_id": "20260415_093002_G7H8J9",
     "turn_id": "turn_0012",

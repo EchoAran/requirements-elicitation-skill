@@ -3,9 +3,9 @@
 ## Input
 
 ### conversation snippet
-- user turn 1: "先聊功能，我要聊天和推荐。"
-- user turn 2: "先别聊功能，预算更关键。"
-- user turn 3: "算了预算先放着，先说合规。"
+- user turn 1: "Let's discuss features first. I want chat and recommendations."
+- user turn 2: "Pause features for now, budget is more important."
+- user turn 3: "Actually, postpone budget and discuss compliance first."
 
 ## Expected handling
 
@@ -17,5 +17,5 @@
 ## Good next utterance pattern
 
 ```text
-收到，你想先确认合规边界。为了避免后面返工，先确认一个前置点：这个产品是否会处理任何受监管的个人敏感数据？
+Understood. You want to confirm compliance boundaries first. To avoid rework later, let me confirm one prerequisite: will this product process any regulated sensitive personal data?
 ```

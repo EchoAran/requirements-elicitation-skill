@@ -1,6 +1,6 @@
 {
   "name": "normal_persistence_case",
-  "goal": "验证一次正常 turn 写入后状态完整且可校验",
+  "goal": "Verify that one normal turn commit produces complete and valid state files.",
   "inputs": {
     "session_id": "20260415_093000_A1B2C3",
     "turn_id": "turn_0001",

@@ -14,5 +14,5 @@ I do not want to discuss budget now. Please continue with user workflow first.
 ## Good next utterance pattern
 
 ```text
-明白，预算先暂缓。我先聚焦用户流程：首批用户从打开产品到完成一次核心任务，完整步骤是什么？
+Understood, we can defer budget for now. I will focus on user workflow first: what are the exact steps from opening the product to completing one core task for first-wave users?
 ```

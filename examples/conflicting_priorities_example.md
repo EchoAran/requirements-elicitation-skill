@@ -16,5 +16,5 @@ Also for V1, we can accept occasional downtime if delivery is faster.
 ## Good next utterance pattern
 
 ```text
-你给了两个相反优先级：V1 既要求高可靠，又可接受偶发宕机换速度。请确认第一版以哪一个为主？
+You gave two conflicting priorities: V1 requires high reliability, but also accepts occasional downtime for faster delivery. Which priority should be authoritative for the first release?
 ```
