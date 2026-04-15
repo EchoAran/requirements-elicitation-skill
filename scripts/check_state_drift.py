@@ -2,16 +2,17 @@
 import argparse
 import json
 import shutil
+import hashlib
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from storage_adapter import FileStorageAdapter
 from validate_state import (
     bootstrap_current_revision,
     cross_validate,
     maybe_jsonschema_validate,
-    read_current_revision,
     validate_history,
     validate_metadata,
 )
@@ -51,38 +52,14 @@ def rollback_from_checkpoint(session_dir: Path) -> bool:
     return True
 
 
-def latest_revision_number(revisions_root: Path) -> int:
-    nums: List[int] = []
-    for p in revisions_root.glob("r*"):
-        if p.is_dir() and p.name[1:].isdigit():
-            nums.append(int(p.name[1:]))
-    return max(nums) if nums else 0
-
-
-def write_current_pointer(session_dir: Path, revision_id: str) -> None:
-    tmp = session_dir / "CURRENT.tmp"
-    with tmp.open("w", encoding="utf-8", newline="\n") as f:
-        f.write(revision_id + "\n")
-    tmp.replace(session_dir / "CURRENT")
-
-
-def write_revision(session_dir: Path, framework: Dict[str, Any], history: List[Dict[str, Any]], metadata: Dict[str, Any], commit: Optional[Dict[str, Any]]) -> str:
-    revisions_root = session_dir / "revisions"
-    revisions_root.mkdir(parents=True, exist_ok=True)
-    revision_id = f"r{latest_revision_number(revisions_root)+1:06d}"
-    tmp_dir = revisions_root / f".{revision_id}.tmp"
-    final_dir = revisions_root / revision_id
-    if tmp_dir.exists():
-        shutil.rmtree(tmp_dir, ignore_errors=True)
-    tmp_dir.mkdir(parents=True, exist_ok=True)
-    write_json(tmp_dir / "framework.json", framework)
-    write_json(tmp_dir / "history.json", history)
-    write_json(tmp_dir / "metadata.json", metadata)
-    if commit is not None:
-        write_json(tmp_dir / "commit.json", commit)
-    tmp_dir.replace(final_dir)
-    write_current_pointer(session_dir, revision_id)
-    return revision_id
+def hash_payload(framework: Dict[str, Any], history: List[Dict[str, Any]], metadata: Dict[str, Any]) -> str:
+    payload = json.dumps(
+        {"framework": framework, "history": history, "metadata": metadata},
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def create_pre_migration_checkpoint(session_dir: Path, source_root: Path) -> None:
@@ -214,26 +191,29 @@ def main() -> int:
     parser.add_argument("--migrate", action="store_true")
     args = parser.parse_args()
 
+    state_root = Path(args.state_root)
+    storage_adapter = FileStorageAdapter(state_root)
     schema = load_json(Path(args.schema))
     target_schema_version = (
         schema.get("properties", {}).get("schema_version", {}).get("const") or "2.0.0"
     )
 
-    session_dir = Path(args.state_root) / "sessions" / args.session_id
+    session_dir = storage_adapter.resolve_session_dir(session_id=args.session_id)
     current_revision_id = bootstrap_current_revision(session_dir)
-    revision_dir = session_dir / "revisions" / current_revision_id if current_revision_id else session_dir
-    framework_path = revision_dir / "framework.json"
-    history_path = revision_dir / "history.json"
-    metadata_path = revision_dir / "metadata.json"
-    commit_path = revision_dir / "commit.json"
-    conversation_index_path = Path(args.state_root) / "conversation_index.json"
-    if not framework_path.exists() or not metadata_path.exists() or not history_path.exists():
-        print("[ERROR] framework.json/history.json/metadata.json missing")
+
+    try:
+        snapshot = storage_adapter.load_current(args.session_id)
+    except Exception as exc:
+        print(f"[ERROR] failed to load current state snapshot: {exc}")
         return 1
 
-    framework = load_json(framework_path)
-    history = load_json(history_path)
-    metadata = load_json(metadata_path)
+    revision_dir = (
+        session_dir / "revisions" / snapshot.revision_id if snapshot.revision_id else session_dir
+    )
+    framework = snapshot.framework
+    history = snapshot.history
+    metadata = snapshot.metadata
+    commit = snapshot.commit
     actual = metadata.get("schema_version")
     if actual == target_schema_version:
         print(f"[OK] no drift: {actual}")
@@ -258,12 +238,7 @@ def main() -> int:
             errors.append(schema_msg)
         errors.extend(validate_history(history))
         errors.extend(validate_metadata(metadata))
-        commit = load_json(commit_path) if commit_path.exists() else None
-        manifest_path = session_dir / "manifest.json"
-        manifest = load_json(manifest_path) if manifest_path.exists() else None
-        conversation_index = (
-            load_json(conversation_index_path) if conversation_index_path.exists() else None
-        )
+        conversation_index = storage_adapter.load_conversation_index()
         errors.extend(
             cross_validate(
                 framework,
@@ -271,20 +246,34 @@ def main() -> int:
                 metadata,
                 commit,
                 conversation_index,
-                current_revision_id,
+                snapshot.revision_id or current_revision_id,
                 revision_dir if revision_dir.exists() else None,
             )
         )
         if errors:
             raise ValueError("post-migration validation failed: " + "; ".join(errors))
 
-        revision_id = write_revision(session_dir, framework, history, metadata, commit)
+        migration_commit: Dict[str, Any] = {
+            "session_id": args.session_id,
+            "turn_id": f"system_migration_{now_iso()}",
+            "state_version": metadata.get("state_version", "2.0.0"),
+            "schema_version": metadata.get("schema_version", target_schema_version),
+            "timestamp": now_iso(),
+            "content_hash": hash_payload(framework, history, metadata),
+        }
+        metadata["last_successful_commit"] = migration_commit
+
+        revision_id = storage_adapter.commit_revision(
+            args.session_id, framework, history, metadata, migration_commit
+        )
+        metadata["last_successful_commit"]["revision_id"] = revision_id
+        write_json(session_dir / "revisions" / revision_id / "metadata.json", metadata)
+
         # Keep legacy live files in sync.
         write_json(session_dir / "framework.json", framework)
         write_json(session_dir / "history.json", history)
         write_json(session_dir / "metadata.json", metadata)
-        if commit is not None:
-            write_json(session_dir / "commit.json", commit)
+        write_json(session_dir / "commit.json", migration_commit)
         print(f"[INFO] migrated into revision: {revision_id}")
         print("[OK] migration completed")
         return 0

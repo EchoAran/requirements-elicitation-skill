@@ -57,6 +57,18 @@ Evidence limits:
 - Record contradictions by setting affected slot status to `conflicted`.
 - When a contradiction is detected, set slot `contradiction_severity` to `low|medium|high`.
 
+## Status-confidence validity matrix
+
+Apply these constraints when writing slots:
+- `empty` -> confidence must be `open`
+- `filled` -> confidence must be `confirmed` or `supported_inference` (never `open`)
+- `open_question` -> confidence should be `open` or `supported_inference`
+- `conflicted` -> confidence must be `confirmed` or `supported_inference`, and `contradiction_severity` must be non-null
+
+If incoming information would violate the matrix:
+- downgrade to `open_question` when certainty is insufficient
+- keep prior stable value and append an open question instead of forcing invalid state
+
 ## Information density and follow up depth
 
 Estimate information density of the latest user answer:

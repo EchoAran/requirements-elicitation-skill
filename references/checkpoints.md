@@ -105,3 +105,12 @@ Within `runtime`, detect whether the next action should emphasize:
 Do not mark `complete` just because the conversation is long.
 Do not remain in `runtime` forever if the user wants to stop and the remaining gaps are non critical.
 When stopping early by user request, keep unresolved contradictions and major assumptions explicit in open questions and risk section.
+
+## Semantic alignment requirements
+
+This file follows the authoritative state semantics in `SKILL.md` ("State semantics mapping").
+
+Before `complete`, verify these additional consistency rules:
+- no `conflicted` slot remains with `contradiction_severity=high`
+- no slot uses invalid `status`/`confidence` pair (for example `filled + open`, `empty + confirmed`)
+- `open_question` slots are treated as unresolved and must not be counted as fully converged evidence

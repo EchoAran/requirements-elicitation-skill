@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from storage_adapter import FileStorageAdapter
 from validate_state import (
     bootstrap_current_revision,
     cross_validate,
@@ -136,22 +137,6 @@ def load_json_if_exists(path: Path) -> Optional[Any]:
     return load_json(path) if path.exists() else None
 
 
-def update_conversation_index(state_root: Path, conversation_id: str, session_id: str) -> None:
-    index_path = state_root / "conversation_index.json"
-    index = {}
-    if index_path.exists():
-        raw = load_json(index_path)
-        if isinstance(raw, dict):
-            index = raw
-    mapped = index.get(conversation_id)
-    if mapped not in (None, session_id):
-        raise ValueError(
-            f"conversation_id already mapped to another session: {conversation_id} -> {mapped}"
-        )
-    index[conversation_id] = session_id
-    write_json_atomic(index_path, index)
-
-
 def persist_commit_artifact(
     session_dir: Path,
     commit: Dict[str, Any],
@@ -175,47 +160,6 @@ def persist_commit_artifact(
     }
     write_json_atomic(session_dir / "manifest.json", manifest)
     return commit_id
-
-
-def latest_revision_number(revisions_root: Path) -> int:
-    nums: List[int] = []
-    for p in revisions_root.glob("r*"):
-        if p.is_dir() and p.name[1:].isdigit():
-            nums.append(int(p.name[1:]))
-    return max(nums) if nums else 0
-
-
-def write_current_pointer(session_dir: Path, revision_id: str) -> None:
-    current_path = session_dir / "CURRENT"
-    tmp_path = session_dir / "CURRENT.tmp"
-    with tmp_path.open("w", encoding="utf-8", newline="\n") as f:
-        f.write(revision_id + "\n")
-    tmp_path.replace(current_path)
-
-
-def write_revision_commit(
-    session_dir: Path,
-    framework: Dict[str, Any],
-    history: List[Dict[str, Any]],
-    metadata: Dict[str, Any],
-    commit: Dict[str, Any],
-) -> str:
-    revisions_root = session_dir / "revisions"
-    revisions_root.mkdir(parents=True, exist_ok=True)
-    next_n = latest_revision_number(revisions_root) + 1
-    revision_id = f"r{next_n:06d}"
-    temp_revision = revisions_root / f".{revision_id}.tmp"
-    final_revision = revisions_root / revision_id
-    if temp_revision.exists():
-        shutil.rmtree(temp_revision, ignore_errors=True)
-    temp_revision.mkdir(parents=True, exist_ok=True)
-    write_json(temp_revision / "framework.json", framework)
-    write_json(temp_revision / "history.json", history)
-    write_json(temp_revision / "metadata.json", metadata)
-    write_json(temp_revision / "commit.json", commit)
-    temp_revision.replace(final_revision)
-    write_current_pointer(session_dir, revision_id)
-    return revision_id
 
 
 def enforce_limits(framework: Dict[str, Any], history: List[Dict[str, Any]], metadata: Dict[str, Any]) -> None:
@@ -288,6 +232,7 @@ def main() -> int:
         return 1
 
     state_root = Path(args.state_root)
+    storage_adapter = FileStorageAdapter(state_root)
     session_dir = state_root / "sessions" / args.session_id
     temp_dir = state_root / "temp" / args.session_id
     session_dir.mkdir(parents=True, exist_ok=True)
@@ -399,7 +344,7 @@ def main() -> int:
 
     # Ensure conversation index mapping is valid before commit
     try:
-        update_conversation_index(state_root, conversation_id, args.session_id)
+        storage_adapter.upsert_conversation_mapping(conversation_id, args.session_id)
     except Exception as exc:
         print(f"[ERROR] conversation index update failed: {exc}")
         return 1
@@ -439,7 +384,9 @@ def main() -> int:
 
     try:
         # 1) write new revision and atomically switch CURRENT first (authoritative read path)
-        revision_id = write_revision_commit(session_dir, framework, history, metadata, commit)
+        revision_id = storage_adapter.commit_revision(
+            args.session_id, framework, history, metadata, commit
+        )
         persist_commit_artifact(session_dir, commit, framework, history, metadata)
         metadata["last_successful_commit"]["revision_id"] = revision_id
         write_json(session_dir / "revisions" / revision_id / "metadata.json", metadata)

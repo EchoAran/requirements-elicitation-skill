@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from storage_adapter import FileStorageAdapter
+
 
 SESSION_ID_PATTERN = re.compile(r"^\d{8}_\d{6}_[A-Z0-9]{6}$")
 
@@ -156,6 +158,38 @@ def build_conflicted_refs(framework: Dict[str, Any]) -> List[str]:
     return refs
 
 
+def validate_slot_state_semantics(framework: Dict[str, Any]) -> List[str]:
+    errors: List[str] = []
+    for topic in framework.get("topics", []):
+        if not isinstance(topic, dict):
+            continue
+        topic_id = topic.get("id", "<unknown_topic>")
+        for slot in topic.get("slots", []):
+            if not isinstance(slot, dict):
+                continue
+            slot_name = slot.get("name", "<unknown_slot>")
+            slot_ref = f"{topic_id}.{slot_name}"
+            status = slot.get("status")
+            confidence = slot.get("confidence")
+            contradiction_severity = slot.get("contradiction_severity")
+
+            if status == "empty" and confidence != "open":
+                errors.append(f"invalid slot state semantics: {slot_ref} uses empty with non-open confidence")
+            if status == "filled" and confidence not in ("confirmed", "supported_inference"):
+                errors.append(f"invalid slot state semantics: {slot_ref} uses filled with open confidence")
+            if status == "open_question" and confidence not in ("open", "supported_inference"):
+                errors.append(f"invalid slot state semantics: {slot_ref} open_question confidence must be open|supported_inference")
+            if status == "conflicted":
+                if confidence not in ("confirmed", "supported_inference"):
+                    errors.append(f"invalid slot state semantics: {slot_ref} conflicted confidence must be confirmed|supported_inference")
+                if contradiction_severity not in ("low", "medium", "high"):
+                    errors.append(f"invalid slot state semantics: {slot_ref} conflicted slot must include contradiction_severity")
+            else:
+                if contradiction_severity is not None:
+                    errors.append(f"invalid slot state semantics: {slot_ref} contradiction_severity must be null when status is not conflicted")
+    return errors
+
+
 def cross_validate(
     framework: Dict[str, Any],
     history: List[Dict[str, Any]],
@@ -196,7 +230,10 @@ def cross_validate(
     if current_topic_id is not None and current_topic_id not in topic_ids:
         errors.append("framework.current_topic_id not found in topics")
 
-    # 4) open_questions and conflicted slots correspondence
+    # 4) slot status-confidence semantics
+    errors.extend(validate_slot_state_semantics(framework))
+
+    # 5) open_questions and conflicted slots correspondence
     conflicted_refs = set(build_conflicted_refs(framework))
     contradiction_refs = set()
     for oq in framework.get("open_questions", []):
@@ -213,7 +250,7 @@ def cross_validate(
         if ref not in conflicted_refs:
             errors.append(f"open contradiction question has no conflicted slot: {ref}")
 
-    # 5) commit consistency
+    # 6) commit consistency
     if commit is not None:
         if commit.get("session_id") != metadata_sid:
             errors.append("commit.session_id does not match metadata.session_id")
@@ -222,7 +259,7 @@ def cross_validate(
         if commit.get("schema_version") != metadata.get("schema_version"):
             errors.append("commit.schema_version does not match metadata.schema_version")
 
-    # 6) conversation index consistency
+    # 7) conversation index consistency
     if conversation_index is not None:
         conversation_id = metadata.get("conversation_id")
         if isinstance(conversation_id, str):
@@ -230,7 +267,7 @@ def cross_validate(
             if mapped != metadata_sid:
                 errors.append("conversation_index mapping does not match metadata session_id")
 
-    # 7) current revision consistency
+    # 8) current revision consistency
     if current_revision_id is not None:
         if not current_revision_id.startswith("r"):
             errors.append("CURRENT revision id must start with 'r'")
@@ -242,27 +279,6 @@ def cross_validate(
     return errors
 
 
-def resolve_session_dir(
-    state_root: Path, session_id: Optional[str], conversation_id: Optional[str]
-) -> Path:
-    sessions_root = state_root / "sessions"
-    if session_id:
-        return sessions_root / session_id
-    if conversation_id:
-        index_path = state_root / "conversation_index.json"
-        if not index_path.exists():
-            raise FileNotFoundError("conversation_index.json not found while resolving conversation_id")
-        index = load_json(index_path)
-        mapped = index.get(conversation_id) if isinstance(index, dict) else None
-        if not isinstance(mapped, str):
-            raise FileNotFoundError("conversation_id not found in conversation_index.json")
-        return sessions_root / mapped
-    candidates = sorted([p for p in sessions_root.glob("*") if p.is_dir()], reverse=True)
-    if not candidates:
-        raise FileNotFoundError("no session directory found")
-    return candidates[0]
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate state files for one session")
     parser.add_argument("--state-root", default="state", help="State root directory")
@@ -272,43 +288,35 @@ def main() -> int:
     args = parser.parse_args()
 
     state_root = Path(args.state_root)
+    storage_adapter = FileStorageAdapter(state_root)
     schema_path = Path(args.schema)
-    session_dir = resolve_session_dir(state_root, args.session_id, args.conversation_id)
+    session_dir = storage_adapter.resolve_session_dir(args.session_id, args.conversation_id)
     session_id = session_dir.name
 
     if not SESSION_ID_PATTERN.match(session_id):
         print(f"[ERROR] invalid session directory name: {session_id}")
         return 1
 
-    framework_path = session_dir / "framework.json"
-    history_path = session_dir / "history.json"
-    metadata_path = session_dir / "metadata.json"
-    commit_path = session_dir / "commit.json"
-    conversation_index_path = state_root / "conversation_index.json"
-
     current_revision_id = bootstrap_current_revision(session_dir)
-    revision_dir: Optional[Path] = None
-    if current_revision_id:
-        revision_dir = session_dir / "revisions" / current_revision_id
-        framework_path = revision_dir / "framework.json"
-        history_path = revision_dir / "history.json"
-        metadata_path = revision_dir / "metadata.json"
-        commit_path = revision_dir / "commit.json"
-
-    missing = [str(p) for p in [framework_path, history_path, metadata_path, schema_path] if not p.exists()]
-    if missing:
-        for item in missing:
-            print(f"[ERROR] missing file: {item}")
+    if not schema_path.exists():
+        print(f"[ERROR] missing file: {schema_path}")
         return 1
 
-    framework = load_json(framework_path)
-    history = load_json(history_path)
-    metadata = load_json(metadata_path)
+    try:
+        snapshot = storage_adapter.load_current(session_id)
+    except Exception as exc:
+        print(f"[ERROR] failed to load current state snapshot: {exc}")
+        return 1
+
+    framework = snapshot.framework
+    history = snapshot.history
+    metadata = snapshot.metadata
+    commit = snapshot.commit
+    revision_dir: Optional[Path] = None
+    if snapshot.revision_id:
+        revision_dir = session_dir / "revisions" / snapshot.revision_id
     schema = load_json(schema_path)
-    commit = load_json(commit_path) if commit_path.exists() else None
-    conversation_index = (
-        load_json(conversation_index_path) if conversation_index_path.exists() else None
-    )
+    conversation_index = storage_adapter.load_conversation_index()
 
     errors: List[str] = []
 

@@ -61,15 +61,18 @@
                 "value": {},
                 "confidence": {
                   "type": "string",
-                  "enum": ["confirmed", "supported_inference", "open"]
+                  "enum": ["confirmed", "supported_inference", "open"],
+                  "description": "Semantic constraints are runtime-validated: empty->open; filled must not use open; conflicted should not use open."
                 },
                 "status": {
                   "type": "string",
-                  "enum": ["empty", "filled", "open_question", "conflicted"]
+                  "enum": ["empty", "filled", "open_question", "conflicted"],
+                  "description": "Pair with confidence using SKILL.md state semantics mapping."
                 },
                 "contradiction_severity": {
                   "type": ["string", "null"],
-                  "enum": ["low", "medium", "high", null]
+                  "enum": ["low", "medium", "high", null],
+                  "description": "Required when status=conflicted."
                 },
                 "evidence": {
                   "type": "array",

@@ -13,10 +13,11 @@ Use this file to detect, record, and resolve contradictory requirement statement
 
 When contradiction is found:
 1. mark affected slot `status` as `conflicted`
-2. retain both claims in evidence trail
-3. classify contradiction severity as `low|medium|high`
-4. append one structured open question item (`kind=contradiction`)
-5. append one structured item to framework `contradictions`
+2. ensure slot `confidence` is not `open` (use `supported_inference` if explicit confirmation is not yet available)
+3. retain both claims in evidence trail
+4. classify contradiction severity as `low|medium|high`
+5. append one structured open question item (`kind=contradiction`)
+6. append one structured item to framework `contradictions`
 
 Open question format:
 - `id`: unique question id

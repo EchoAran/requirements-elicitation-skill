@@ -95,6 +95,17 @@ Every state-changing turn must commit with all-or-nothing semantics:
 - Enforce hard size limits for input text, evidence list, and history file.
 - Record truncation events in metadata fields (`truncated_fields`, `truncation_count`).
 
+## Storage adapter contract
+
+To keep interview logic portable across runtimes, implement persistence behind a minimal adapter interface:
+- `load_current(session_id) -> framework, history, metadata, commit, revision_id`
+- `commit_revision(session_id, framework, history, metadata, commit) -> revision_id`
+- `mark_closed(session_id, closed_at)`
+- `archive_session(session_id)`
+
+Current repository default is file-based implementation (`scripts/storage_adapter.py`, `FileStorageAdapter`).
+Future adapters (SQLite, KV, object storage) should implement the same contract without changing interview core logic.
+
 ## Tooling Entry Points
 
 - `scripts/commit_state.py`
@@ -102,3 +113,4 @@ Every state-changing turn must commit with all-or-nothing semantics:
 - `scripts/check_state_drift.py`
 - `scripts/security_scan_state.py`
 - `scripts/cleanup_sessions.py`
+- `scripts/storage_adapter.py`

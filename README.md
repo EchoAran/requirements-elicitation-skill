@@ -94,6 +94,7 @@ Start your agent and trigger a requirements interview, for example:
 │   ├── check_state_drift.py                # Drift detection + migration + rollback
 │   ├── security_scan_state.py              # Sensitive-content scan for state files
 │   ├── cleanup_sessions.py                 # Two-phase archive/delete lifecycle cleanup
+│   ├── storage_adapter.py                  # Minimal storage adapter contract + file backend
 │   └── run_state_tests.py                  # State-layer regression runner
 ├── examples/
 │   ├── new_framework_example.md
@@ -143,6 +144,8 @@ For each user turn, the skill runs:
 - `checkpoints/v{n}` keep rollback snapshots.
 - Two-phase cleanup lifecycle:
   - `active -> closed -> archive -> delete`
+- Storage portability:
+  - Core persistence can be abstracted through `StorageAdapter` contract (`load_current`, `commit_revision`, `mark_closed`, `archive_session`)
 
 ## Tool Install Targets
 

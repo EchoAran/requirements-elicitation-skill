@@ -36,6 +36,68 @@ This skill uses file-based state persistence to maintain interview context acros
 
 When needed, load only the files relevant to the current step instead of reading every file at once.
 
+## Single-file Execution Playbook
+
+Treat this section as the primary runtime contract. Other files are detailed expansions, not competing sources.
+
+### A. Minimal file loading matrix
+
+Load files on demand with the smallest possible set for current intent:
+
+| Runtime need | Required file(s) | Optional assist |
+| --- | --- | --- |
+| phase decision (`start`/`runtime`/`complete`) | `references/checkpoints.md` | none |
+| intent classification + product routing | `references/intent_routing.md` | `examples/intent_routing_example.md` |
+| framework structure change | `references/maintain_framework.md` | `examples/new_framework_example.md`, `examples/modify_framework_example.md` |
+| slot filling | `references/fill_framework.md` | `examples/fill_framework_example.md` |
+| contradiction handling | `references/conflict_resolution.md` | `examples/contradiction_resolution_example.md` |
+| next topic selection | `references/select_current_topic.md`, `references/topic_dependency_map.md` | `examples/select_current_topic_example.md` |
+| next utterance generation | `references/generate_speak.md` | `examples/generate_speak_example.md` |
+| completion summarization | `assets/requirements_report_format.md` | `examples/summarize_example.md` |
+| state read/write/recovery | `references/state_management.md` | `references/state_storage_rules.md`, `references/state_lifecycle.md`, `references/state_cleanup.md` |
+
+### B. Phase and completion decision table
+
+Use this compact decision table before each turn:
+
+| Condition | Decision |
+| --- | --- |
+| no framework exists, or user asks to restart from scratch | phase = `start` |
+| framework exists and major gaps/ambiguities remain | phase = `runtime` |
+| unresolved high impact contradiction exists | force `runtime` |
+| completion checklist passes and score gate passes | phase = `complete` |
+| user asks to stop early but score data is partially missing | summarize with explicit quality caveat and open risks |
+
+### C. State semantics mapping (authoritative)
+
+Apply these mappings consistently across all references, examples, and runtime validators.
+
+#### Slot state mapping
+
+| slot `status` | allowed `confidence` | meaning | required follow-up |
+| --- | --- | --- | --- |
+| `empty` | `open` | no grounded information yet | ask scoped discovery question |
+| `filled` | `confirmed` or `supported_inference` | usable grounded content exists | if `supported_inference`, confirm in upcoming turn |
+| `open_question` | `open` or `supported_inference` | partial signal exists but cannot be treated as committed fact | ask one focused clarification question |
+| `conflicted` | `confirmed` or `supported_inference` | competing claims coexist | set `contradiction_severity`, create contradiction item, prioritize resolution |
+
+Hard guardrails:
+- `filled` must not use `confidence=open`.
+- `empty` must not use `confidence=confirmed|supported_inference`.
+- `conflicted` must include non-null `contradiction_severity`.
+- every `conflicted` slot must map to one open contradiction question via `related_slot_ref`.
+
+#### Topic status mapping
+
+| topic `status` | operational meaning |
+| --- | --- |
+| `unstarted` | no meaningful slot progress yet |
+| `active` | currently selected or being actively clarified |
+| `partially_filled` | at least one key slot has grounded progress but topic is not stable |
+| `sufficient` | topic is mature enough for summary under current scope |
+| `blocked` | progress is blocked by dependency/decision outside current turn |
+| `skipped` | intentionally deferred or user declined, with explicit note |
+
 ## Core operating model
 
 At every turn, execute the following sequence:
