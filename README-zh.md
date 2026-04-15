@@ -1,9 +1,17 @@
-# 需求访谈技能
+<p align="center">
+  <img src="./pic/poster.png" alt="需求访谈技能海报" width="100%" />
+</p>
 
-[英文版](./README.md)
+<h1 align="center">需求访谈技能</h1>
 
-本仓库提供一个面向生产场景的、可持久化状态的**半结构化需求访谈 Skill**。  
-它帮助 Agent 将模糊的产品想法沉淀为可追踪、结构化的需求产物。
+<p align="center">
+  <a href="./README.md"><strong>英文版</strong></a>
+</p>
+
+<p align="center">
+  面向生产场景的可持久化半结构化需求访谈 Skill。
+  将模糊想法沉淀为可追踪、结构化需求产物。
+</p>
 
 ## 这个技能能做什么
 - 以自适应多轮访谈替代一次性问卷。
@@ -130,6 +138,28 @@ chmod +x install.sh
 7. 选择下一话题。
 8. 生成一个聚焦的问题或确认语句。
 9. 以事务方式持久化状态。
+
+### 运行流程图（Mermaid）
+
+```mermaid
+flowchart TD
+    A[新一轮用户输入] --> B[加载并校验会话状态]
+    B --> C[判定阶段: start/runtime/complete]
+
+    C -->|complete| D[加载总结示例与报告模板]
+    D --> E[输出 final_interview_framework 与 requirements_summary_report]
+    E --> F[关闭状态: 标记 session closed]
+    F --> G[延迟清理生命周期: closed -> archive -> delete]
+
+    C -->|start 或 runtime| H[分类意图并路由产品类型]
+    H --> I[维护框架结构]
+    I --> J[填充已落地 slot]
+    J --> K[检测并登记矛盾]
+    K --> L[选择当前话题]
+    L --> M[生成一个聚焦话术]
+    M --> N[事务化持久化状态]
+    N --> A
+```
 
 ## 状态与可追踪模型（v2）
 - 显式维护 `schema_version` 与 `state_version`。

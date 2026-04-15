@@ -1,9 +1,17 @@
-# Requirements Elicitation Skill
+<p align="center">
+  <img src="./pic/poster.png" alt="Requirements Elicitation Skill Poster" width="100%" />
+</p>
 
-[Chinese Version](./README-zh.md)
+<h1 align="center">Requirements Elicitation Skill</h1>
 
-This repository provides a production-oriented, stateful skill for **semi-structured requirements elicitation interviews**.
-It helps agents turn vague product ideas into traceable, structured requirement artifacts.
+<p align="center">
+  <a href="./README-zh.md"><strong>Chinese Version</strong></a>
+</p>
+
+<p align="center">
+  Production-oriented, stateful semi-structured requirements interviews.
+  Turn vague ideas into traceable requirement artifacts.
+</p>
 
 ## What This Skill Does
 - Runs adaptive multi-turn interviews instead of one-shot questionnaires.
@@ -130,6 +138,28 @@ For each user turn, the skill runs:
 7. Select next topic.
 8. Generate one focused next utterance.
 9. Persist state with transactional commit.
+
+### Runtime Flow (Mermaid)
+
+```mermaid
+flowchart TD
+    A[New user turn] --> B[Load and validate session state]
+    B --> C[Detect phase: start/runtime/complete]
+
+    C -->|complete| D[Load summarize example and report format]
+    D --> E[Output final_interview_framework + requirements_summary_report]
+    E --> F[Close state: mark session closed]
+    F --> G[Deferred cleanup lifecycle: closed -> archive -> delete]
+
+    C -->|start or runtime| H[Classify intent and route product type]
+    H --> I[Maintain framework structure]
+    I --> J[Fill grounded slot values]
+    J --> K[Detect and register contradictions]
+    K --> L[Select current topic]
+    L --> M[Generate one focused utterance]
+    M --> N[Persist state with transactional commit]
+    N --> A
+```
 
 ## State and Traceability Model (v2)
 - `schema_version` and `state_version` are explicit.
