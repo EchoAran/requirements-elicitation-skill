@@ -37,7 +37,7 @@ def main() -> int:
         print(f"[OK] state root not found: {root}")
         return 0
 
-    files = list(root.rglob("*.json"))
+    files = list(root.rglob("*.json")) + list(root.rglob("*.jsonl")) + list(root.rglob("cleanup.log"))
     findings = []
     for file_path in files:
         hits = scan_file(file_path)
@@ -50,7 +50,7 @@ def main() -> int:
             print(f" - {file_path}:{line_no}: {content}")
         return 1
 
-    print(f"[OK] no sensitive pattern matched in {len(files)} json files")
+    print(f"[OK] no sensitive pattern matched in {len(files)} scanned files")
     return 0
 
 

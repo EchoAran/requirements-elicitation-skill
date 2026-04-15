@@ -7,7 +7,16 @@ import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+from validate_state import (
+    bootstrap_current_revision,
+    cross_validate,
+    maybe_jsonschema_validate,
+    read_current_revision,
+    validate_history,
+    validate_metadata,
+)
 
 
 SESSION_ID_PATTERN = re.compile(r"^\d{8}_\d{6}_[A-Z0-9]{6}$")
@@ -31,6 +40,12 @@ def write_json(path: Path, data: Any) -> None:
     with path.open("w", encoding="utf-8", newline="\n") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
         f.write("\n")
+
+
+def write_json_atomic(path: Path, data: Any) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    write_json(tmp, data)
+    tmp.replace(path)
 
 
 def hash_payload(framework: Any, history: Any, metadata: Any) -> str:
@@ -67,6 +82,136 @@ def create_checkpoint(session_dir: Path, keep: int) -> None:
     while len(versions) > keep:
         old = versions.pop(0)
         shutil.rmtree(old, ignore_errors=True)
+
+
+def rollback_from_latest_checkpoint(session_dir: Path) -> bool:
+    checkpoints_dir = session_dir / "checkpoints"
+    candidates = [
+        p for p in checkpoints_dir.glob("v*") if p.is_dir() and p.name[1:].isdigit()
+    ]
+    if not candidates:
+        return False
+    latest = sorted(candidates, key=lambda p: int(p.name[1:]), reverse=True)[0]
+    for name in ["framework.json", "history.json", "metadata.json", "commit.json"]:
+        src = latest / name
+        if src.exists():
+            shutil.copy2(src, session_dir / name)
+    return True
+
+
+def restore_from_current_revision(session_dir: Path) -> bool:
+    revision_id = read_current_revision(session_dir)
+    if not revision_id:
+        return False
+    revision_dir = session_dir / "revisions" / revision_id
+    if not revision_dir.exists():
+        return False
+    for name in ["framework.json", "history.json", "metadata.json", "commit.json"]:
+        src = revision_dir / name
+        if src.exists():
+            shutil.copy2(src, session_dir / name)
+    return True
+
+
+def recover_incomplete_commit(session_dir: Path) -> None:
+    pending = session_dir / "pending_commit.json"
+    if not pending.exists():
+        return
+    if restore_from_current_revision(session_dir):
+        pending.unlink(missing_ok=True)
+        print("[WARN] recovered from incomplete commit via CURRENT revision")
+        return
+    if rollback_from_latest_checkpoint(session_dir):
+        pending.unlink(missing_ok=True)
+        print("[WARN] recovered from incomplete commit via latest checkpoint")
+        return
+    raise RuntimeError("pending_commit.json exists but no checkpoint available for recovery")
+
+
+def load_json_if_exists(path: Path) -> Optional[Any]:
+    return load_json(path) if path.exists() else None
+
+
+def update_conversation_index(state_root: Path, conversation_id: str, session_id: str) -> None:
+    index_path = state_root / "conversation_index.json"
+    index = {}
+    if index_path.exists():
+        raw = load_json(index_path)
+        if isinstance(raw, dict):
+            index = raw
+    mapped = index.get(conversation_id)
+    if mapped not in (None, session_id):
+        raise ValueError(
+            f"conversation_id already mapped to another session: {conversation_id} -> {mapped}"
+        )
+    index[conversation_id] = session_id
+    write_json_atomic(index_path, index)
+
+
+def persist_commit_artifact(
+    session_dir: Path,
+    commit: Dict[str, Any],
+    framework: Dict[str, Any],
+    history: List[Dict[str, Any]],
+    metadata: Dict[str, Any],
+) -> str:
+    commit_id = f"{commit['timestamp'].replace(':', '').replace('-', '')}_{commit['turn_id']}_{commit['content_hash'][:8]}"
+    commit_dir = session_dir / "commits" / commit_id
+    commit_dir.mkdir(parents=True, exist_ok=True)
+    write_json(commit_dir / "framework.json", framework)
+    write_json(commit_dir / "history.json", history)
+    write_json(commit_dir / "metadata.json", metadata)
+    write_json(commit_dir / "commit.json", commit)
+    manifest = {
+        "session_id": commit["session_id"],
+        "current_commit_id": commit_id,
+        "turn_id": commit["turn_id"],
+        "content_hash": commit["content_hash"],
+        "updated_at": now_iso(),
+    }
+    write_json_atomic(session_dir / "manifest.json", manifest)
+    return commit_id
+
+
+def latest_revision_number(revisions_root: Path) -> int:
+    nums: List[int] = []
+    for p in revisions_root.glob("r*"):
+        if p.is_dir() and p.name[1:].isdigit():
+            nums.append(int(p.name[1:]))
+    return max(nums) if nums else 0
+
+
+def write_current_pointer(session_dir: Path, revision_id: str) -> None:
+    current_path = session_dir / "CURRENT"
+    tmp_path = session_dir / "CURRENT.tmp"
+    with tmp_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(revision_id + "\n")
+    tmp_path.replace(current_path)
+
+
+def write_revision_commit(
+    session_dir: Path,
+    framework: Dict[str, Any],
+    history: List[Dict[str, Any]],
+    metadata: Dict[str, Any],
+    commit: Dict[str, Any],
+) -> str:
+    revisions_root = session_dir / "revisions"
+    revisions_root.mkdir(parents=True, exist_ok=True)
+    next_n = latest_revision_number(revisions_root) + 1
+    revision_id = f"r{next_n:06d}"
+    temp_revision = revisions_root / f".{revision_id}.tmp"
+    final_revision = revisions_root / revision_id
+    if temp_revision.exists():
+        shutil.rmtree(temp_revision, ignore_errors=True)
+    temp_revision.mkdir(parents=True, exist_ok=True)
+    write_json(temp_revision / "framework.json", framework)
+    write_json(temp_revision / "history.json", history)
+    write_json(temp_revision / "metadata.json", metadata)
+    write_json(temp_revision / "commit.json", commit)
+    temp_revision.replace(final_revision)
+    write_current_pointer(session_dir, revision_id)
+    return revision_id
 
 
 def enforce_limits(framework: Dict[str, Any], history: List[Dict[str, Any]], metadata: Dict[str, Any]) -> None:
@@ -127,6 +272,7 @@ def main() -> int:
     parser.add_argument("--framework-file", required=True)
     parser.add_argument("--history-file", required=True)
     parser.add_argument("--metadata-file", required=True)
+    parser.add_argument("--schema", default="assets/interview_framework_schema.json")
     parser.add_argument("--schema-version", default="2.0.0")
     parser.add_argument("--keep-checkpoints", type=int, default=5)
     args = parser.parse_args()
@@ -142,29 +288,118 @@ def main() -> int:
     temp_dir = state_root / "temp" / args.session_id
     session_dir.mkdir(parents=True, exist_ok=True)
     temp_dir.mkdir(parents=True, exist_ok=True)
+    recover_incomplete_commit(session_dir)
 
     framework = load_json(Path(args.framework_file))
     history = load_json(Path(args.history_file))
     metadata = load_json(Path(args.metadata_file))
+    schema = load_json(Path(args.schema))
+
+    history_last_turn_id = None
+    if isinstance(history, list) and history:
+        last_item = history[-1]
+        if isinstance(last_item, dict):
+            history_last_turn_id = last_item.get("turn_id")
+    if not isinstance(history_last_turn_id, str):
+        print("[ERROR] history must contain at least one turn with a valid turn_id")
+        return 1
+    if args.turn_id != history_last_turn_id:
+        print(
+            f"[ERROR] args.turn_id ({args.turn_id}) must match history last turn_id ({history_last_turn_id})"
+        )
+        return 1
+
+    conversation_id = metadata.get("conversation_id")
+    if not isinstance(conversation_id, str) or not conversation_id:
+        print("[ERROR] metadata.conversation_id is required")
+        return 1
 
     # Retry/duplicate protection
-    existing_history_path = session_dir / "history.json"
-    if existing_history_path.exists():
-        existing_history = load_json(existing_history_path)
-        if isinstance(existing_history, list) and existing_history:
-            if existing_history[-1].get("turn_id") == args.turn_id:
-                print(f"[OK] duplicate turn detected, commit skipped: {args.turn_id}")
-                return 0
+    current_revision_id = bootstrap_current_revision(session_dir)
+    existing_history_path = (
+        session_dir / "revisions" / current_revision_id / "history.json"
+        if current_revision_id
+        else session_dir / "history.json"
+    )
+    existing_commit_path = (
+        session_dir / "revisions" / current_revision_id / "commit.json"
+        if current_revision_id
+        else session_dir / "commit.json"
+    )
+    existing_history = load_json_if_exists(existing_history_path)
+    existing_commit = load_json_if_exists(existing_commit_path)
 
     write_attempt_count = int(metadata.get("write_attempt_count", 0)) + 1
     metadata["write_attempt_count"] = write_attempt_count
     metadata["schema_version"] = args.schema_version
-    metadata["last_turn_id"] = args.turn_id
+    metadata["last_turn_id"] = history_last_turn_id
     metadata["last_accessed"] = now_iso()
     metadata["last_updated"] = now_iso()
     enforce_limits(framework, history, metadata)
 
     content_hash = hash_payload(framework, history, metadata)
+
+    if existing_history_path.exists():
+        if isinstance(existing_history, list) and existing_history:
+            if existing_history[-1].get("turn_id") == args.turn_id:
+                existing_hash = (
+                    existing_commit.get("content_hash")
+                    if isinstance(existing_commit, dict)
+                    else None
+                )
+                if existing_hash == content_hash:
+                    # True idempotent retry: update metadata retry counters/access timestamps only.
+                    metadata_path = (
+                        session_dir / "revisions" / current_revision_id / "metadata.json"
+                        if current_revision_id
+                        else session_dir / "metadata.json"
+                    )
+                    if metadata_path.exists():
+                        live_metadata = load_json(metadata_path)
+                        if isinstance(live_metadata, dict):
+                            live_metadata["write_attempt_count"] = int(
+                                live_metadata.get("write_attempt_count", 0)
+                            ) + 1
+                            live_metadata["last_accessed"] = now_iso()
+                            live_metadata["last_updated"] = now_iso()
+                            write_json(metadata_path, live_metadata)
+                    print(f"[OK] idempotent duplicate turn detected and acknowledged: {args.turn_id}")
+                    return 0
+                print(
+                    "[WARN] duplicate turn_id with different payload detected; continuing corrective commit"
+                )
+
+    # Pre-commit validation before touching live files
+    errors: List[str] = []
+    schema_msg = maybe_jsonschema_validate(framework, schema)
+    if schema_msg and schema_msg.startswith("schema validation failed"):
+        errors.append(schema_msg)
+    errors.extend(validate_history(history))
+    errors.extend(validate_metadata(metadata))
+    errors.extend(
+        cross_validate(
+            framework,
+            history,
+            metadata,
+            None,
+            {conversation_id: args.session_id},
+            current_revision_id,
+            (session_dir / "revisions" / current_revision_id) if current_revision_id else None,
+        )
+    )
+    if errors:
+        print("[ERROR] pre-commit validation failed:")
+        for err in errors:
+            print(f" - {err}")
+        return 1
+
+    # Ensure conversation index mapping is valid before commit
+    try:
+        update_conversation_index(state_root, conversation_id, args.session_id)
+    except Exception as exc:
+        print(f"[ERROR] conversation index update failed: {exc}")
+        return 1
+
     commit = {
         "session_id": args.session_id,
         "turn_id": args.turn_id,
@@ -192,13 +427,29 @@ def main() -> int:
             print(f"[ERROR] tmp file invalid: {p}")
             return 1
 
-    os_framework = session_dir / "framework.json"
-    os_history = session_dir / "history.json"
-    os_metadata = session_dir / "metadata.json"
-    tmp_framework.replace(os_framework)
-    tmp_history.replace(os_history)
-    tmp_metadata.replace(os_metadata)
-    write_json(session_dir / "commit.json", commit)
+    pending_commit_path = session_dir / "pending_commit.json"
+    write_json_atomic(
+        pending_commit_path,
+        {"session_id": args.session_id, "turn_id": args.turn_id, "content_hash": content_hash, "timestamp": now_iso()},
+    )
+
+    try:
+        # Keep legacy live files for compatibility/debug visibility.
+        tmp_framework.replace(session_dir / "framework.json")
+        tmp_history.replace(session_dir / "history.json")
+        tmp_metadata.replace(session_dir / "metadata.json")
+        write_json(session_dir / "commit.json", commit)
+        revision_id = write_revision_commit(session_dir, framework, history, metadata, commit)
+        persist_commit_artifact(session_dir, commit, framework, history, metadata)
+        metadata["last_successful_commit"]["revision_id"] = revision_id
+        write_json(session_dir / "revisions" / revision_id / "metadata.json", metadata)
+        pending_commit_path.unlink(missing_ok=True)
+    except Exception as exc:
+        print(f"[ERROR] commit replace failed: {exc}")
+        if not restore_from_current_revision(session_dir):
+            rollback_from_latest_checkpoint(session_dir)
+        pending_commit_path.unlink(missing_ok=True)
+        return 1
 
     print(f"[OK] committed session={args.session_id} turn_id={args.turn_id}")
     return 0

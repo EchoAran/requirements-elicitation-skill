@@ -14,4 +14,5 @@ python scripts/validate_state.py --state-root state --session-id <SESSION_ID>
 python scripts/check_state_drift.py --state-root state --session-id <SESSION_ID> --migrate
 python scripts/cleanup_sessions.py --state-root state --dry-run
 python scripts/security_scan_state.py --state-root state
+python scripts/run_state_tests.py
 ```

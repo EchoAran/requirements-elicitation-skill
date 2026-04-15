@@ -11,7 +11,7 @@ Phase A: Close
 - Keep `conversation_index` mapping removed after closure.
 
 Phase B: Delayed cleanup
-- Move closed sessions to `state/archive/` after inactivity threshold.
+- Move only already-closed sessions to `state/archive/` after inactivity threshold.
 - Delete archived sessions only after longer retention window.
 
 ## Default Time Rules

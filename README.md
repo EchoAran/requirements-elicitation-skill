@@ -94,7 +94,7 @@ Start your agent and trigger a requirements interview, for example:
 │   ├── check_state_drift.py                # Drift detection + migration + rollback
 │   ├── security_scan_state.py              # Sensitive-content scan for state files
 │   ├── cleanup_sessions.py                 # Two-phase archive/delete lifecycle cleanup
-│   └── migrate_examples_to_v2.py           # Example migration helper
+│   └── run_state_tests.py                  # State-layer regression runner
 ├── examples/
 │   ├── new_framework_example.md
 │   ├── fill_framework_example.md
@@ -138,6 +138,7 @@ For each user turn, the skill runs:
   - `timestamp`
   - `confidence_note`
 - Retry-safe writes use stable `turn_id`.
+- State reads resolve via `CURRENT -> revisions/<revision_id>/` for atomic consistency.
 - `commit.json` records the last successful commit pointer.
 - `checkpoints/v{n}` keep rollback snapshots.
 - Two-phase cleanup lifecycle:
@@ -162,6 +163,7 @@ python scripts/validate_state.py --state-root state --session-id <SESSION_ID>
 python scripts/check_state_drift.py --state-root state --session-id <SESSION_ID> --migrate
 python scripts/security_scan_state.py --state-root state
 python scripts/cleanup_sessions.py --state-root state --archive-days 30 --delete-days 90
+python scripts/run_state_tests.py
 ```
 
 ## Test Cases

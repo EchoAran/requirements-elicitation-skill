@@ -7,6 +7,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from validate_state import (
+    bootstrap_current_revision,
+    cross_validate,
+    maybe_jsonschema_validate,
+    read_current_revision,
+    validate_history,
+    validate_metadata,
+)
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -40,6 +49,57 @@ def rollback_from_checkpoint(session_dir: Path) -> bool:
         if src.exists():
             shutil.copy2(src, session_dir / name)
     return True
+
+
+def latest_revision_number(revisions_root: Path) -> int:
+    nums: List[int] = []
+    for p in revisions_root.glob("r*"):
+        if p.is_dir() and p.name[1:].isdigit():
+            nums.append(int(p.name[1:]))
+    return max(nums) if nums else 0
+
+
+def write_current_pointer(session_dir: Path, revision_id: str) -> None:
+    tmp = session_dir / "CURRENT.tmp"
+    with tmp.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(revision_id + "\n")
+    tmp.replace(session_dir / "CURRENT")
+
+
+def write_revision(session_dir: Path, framework: Dict[str, Any], history: List[Dict[str, Any]], metadata: Dict[str, Any], commit: Optional[Dict[str, Any]]) -> str:
+    revisions_root = session_dir / "revisions"
+    revisions_root.mkdir(parents=True, exist_ok=True)
+    revision_id = f"r{latest_revision_number(revisions_root)+1:06d}"
+    tmp_dir = revisions_root / f".{revision_id}.tmp"
+    final_dir = revisions_root / revision_id
+    if tmp_dir.exists():
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    write_json(tmp_dir / "framework.json", framework)
+    write_json(tmp_dir / "history.json", history)
+    write_json(tmp_dir / "metadata.json", metadata)
+    if commit is not None:
+        write_json(tmp_dir / "commit.json", commit)
+    tmp_dir.replace(final_dir)
+    write_current_pointer(session_dir, revision_id)
+    return revision_id
+
+
+def create_pre_migration_checkpoint(session_dir: Path) -> None:
+    checkpoints_dir = session_dir / "checkpoints"
+    checkpoints_dir.mkdir(parents=True, exist_ok=True)
+    versions = [
+        int(p.name[1:])
+        for p in checkpoints_dir.glob("v*")
+        if p.is_dir() and p.name[1:].isdigit()
+    ]
+    next_v = (max(versions) + 1) if versions else 1
+    target = checkpoints_dir / f"v{next_v}"
+    target.mkdir(parents=True, exist_ok=True)
+    for name in ["framework.json", "history.json", "metadata.json", "commit.json"]:
+        src = session_dir / name
+        if src.exists():
+            shutil.copy2(src, target / name)
 
 
 def migrate_framework(
@@ -104,6 +164,46 @@ def migrate_framework(
     return framework
 
 
+def migrate_history(history: List[Dict[str, Any]], metadata: Dict[str, Any], session_id: str) -> List[Dict[str, Any]]:
+    for i, item in enumerate(history, start=1):
+        if not isinstance(item, dict):
+            history[i - 1] = {
+                "turn": i,
+                "turn_id": f"turn_{i:04d}",
+                "session_id": session_id,
+                "timestamp": now_iso(),
+                "user_input": "",
+                "agent_response": "",
+                "framework_delta": {},
+                "framework_snapshot": {},
+            }
+            continue
+        item.setdefault("turn", i)
+        item.setdefault("turn_id", f"turn_{int(item.get('turn', i)):04d}")
+        item.setdefault("session_id", session_id)
+        item.setdefault("timestamp", now_iso())
+        item.setdefault("user_input", "")
+        item.setdefault("agent_response", "")
+        item.setdefault("framework_delta", {})
+        item.setdefault("framework_snapshot", {})
+    return history
+
+
+def migrate_metadata_defaults(metadata: Dict[str, Any], session_id: str, target_schema_version: str) -> Dict[str, Any]:
+    metadata.setdefault("session_id", session_id)
+    metadata.setdefault("created_at", now_iso())
+    metadata.setdefault("last_accessed", now_iso())
+    metadata.setdefault("state_version", "2.0.0")
+    metadata.setdefault("schema_version", target_schema_version)
+    metadata.setdefault("last_turn_id", None)
+    metadata.setdefault("last_successful_commit", None)
+    metadata.setdefault("write_attempt_count", 0)
+    metadata.setdefault("status", "active")
+    metadata.setdefault("truncation_count", 0)
+    metadata.setdefault("truncated_fields", [])
+    return metadata
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Check and migrate state schema drift")
     parser.add_argument("--state-root", default="state")
@@ -118,13 +218,19 @@ def main() -> int:
     )
 
     session_dir = Path(args.state_root) / "sessions" / args.session_id
-    framework_path = session_dir / "framework.json"
-    metadata_path = session_dir / "metadata.json"
-    if not framework_path.exists() or not metadata_path.exists():
-        print("[ERROR] framework.json or metadata.json missing")
+    current_revision_id = bootstrap_current_revision(session_dir)
+    revision_dir = session_dir / "revisions" / current_revision_id if current_revision_id else session_dir
+    framework_path = revision_dir / "framework.json"
+    history_path = revision_dir / "history.json"
+    metadata_path = revision_dir / "metadata.json"
+    commit_path = revision_dir / "commit.json"
+    conversation_index_path = Path(args.state_root) / "conversation_index.json"
+    if not framework_path.exists() or not metadata_path.exists() or not history_path.exists():
+        print("[ERROR] framework.json/history.json/metadata.json missing")
         return 1
 
     framework = load_json(framework_path)
+    history = load_json(history_path)
     metadata = load_json(metadata_path)
     actual = metadata.get("schema_version")
     if actual == target_schema_version:
@@ -136,11 +242,48 @@ def main() -> int:
         return 1
 
     try:
+        create_pre_migration_checkpoint(session_dir)
         framework = migrate_framework(framework, metadata, target_schema_version)
+        history = migrate_history(history, metadata, args.session_id)
+        metadata = migrate_metadata_defaults(metadata, args.session_id, target_schema_version)
         metadata["schema_version"] = target_schema_version
         metadata["last_updated"] = now_iso()
-        write_json(framework_path, framework)
-        write_json(metadata_path, metadata)
+
+        # Post-migration validation before writing live files
+        schema_msg = maybe_jsonschema_validate(framework, schema)
+        errors: List[str] = []
+        if schema_msg and schema_msg.startswith("schema validation failed"):
+            errors.append(schema_msg)
+        errors.extend(validate_history(history))
+        errors.extend(validate_metadata(metadata))
+        commit = load_json(commit_path) if commit_path.exists() else None
+        manifest_path = session_dir / "manifest.json"
+        manifest = load_json(manifest_path) if manifest_path.exists() else None
+        conversation_index = (
+            load_json(conversation_index_path) if conversation_index_path.exists() else None
+        )
+        errors.extend(
+            cross_validate(
+                framework,
+                history,
+                metadata,
+                commit,
+                conversation_index,
+                current_revision_id,
+                revision_dir if revision_dir.exists() else None,
+            )
+        )
+        if errors:
+            raise ValueError("post-migration validation failed: " + "; ".join(errors))
+
+        revision_id = write_revision(session_dir, framework, history, metadata, commit)
+        # Keep legacy live files in sync.
+        write_json(session_dir / "framework.json", framework)
+        write_json(session_dir / "history.json", history)
+        write_json(session_dir / "metadata.json", metadata)
+        if commit is not None:
+            write_json(session_dir / "commit.json", commit)
+        print(f"[INFO] migrated into revision: {revision_id}")
         print("[OK] migration completed")
         return 0
     except Exception as exc:

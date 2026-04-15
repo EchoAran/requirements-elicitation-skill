@@ -69,6 +69,8 @@ This document defines file contracts, hard limits, and transaction boundaries.
   - `state/archive/`
 - Transaction temp path: `state/temp/{session_id}/`.
 - Checkpoint path: `state/sessions/{session_id}/checkpoints/v{n}/`.
+- Revision path: `state/sessions/{session_id}/revisions/r{n}/`.
+- Active read pointer: `state/sessions/{session_id}/CURRENT`.
 
 ## Session ID and Path Safety
 
@@ -97,8 +99,9 @@ If truncation occurs:
    - `metadata.json.tmp`
 3. Validate all 3 temp files.
 4. Backup current live files to a new checkpoint version.
-5. Rename temp files to live files.
-6. Write `commit.json`.
+5. Write complete revision snapshot to `revisions/r{n}`.
+6. Atomically replace `CURRENT` pointer to `r{n}`.
+7. Write `commit.json` (and optional live mirrors for compatibility/debug).
 
 If step 3 fails, do not mutate live files.
 
@@ -108,11 +111,17 @@ If step 3 fails, do not mutate live files.
 
 - `framework.json` validates against schema.
 - `history.json` is ordered and has unique `turn_id`.
+- `history.turn` must be strictly increasing by 1, but the first turn value does not have to be 1 after retention truncation.
 - `metadata.json` includes all required operational fields.
 
 ### Cross-file validation
 
+- Read source should be `CURRENT -> revisions/<id>/`.
 - `session_id` must match across framework, history context, and metadata.
 - `metadata.last_turn_id` must match `history[-1].turn_id`.
+- `framework.session.status` must match `metadata.status`.
+- `framework.session.schema_version` must match `metadata.schema_version`.
+- If `commit.json` exists, `commit.turn_id` must match `metadata.last_turn_id`.
+- If `conversation_index.json` exists, `conversation_index[metadata.conversation_id]` must match `metadata.session_id`.
 - `framework.current_topic_id` must exist in `framework.topics`.
 - Each `conflicted` slot must have an open contradiction question linked by `related_slot_ref`.

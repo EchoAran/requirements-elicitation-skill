@@ -94,7 +94,7 @@ chmod +x install.sh
 │   ├── check_state_drift.py                # 漂移检测 + 迁移 + 回滚
 │   ├── security_scan_state.py              # 状态文件敏感信息扫描
 │   ├── cleanup_sessions.py                 # 两阶段归档/删除生命周期清理
-│   └── migrate_examples_to_v2.py           # 示例迁移辅助脚本
+│   └── run_state_tests.py                  # 状态层回归测试运行脚本
 ├── examples/
 │   ├── new_framework_example.md
 │   ├── fill_framework_example.md
@@ -138,6 +138,7 @@ chmod +x install.sh
   - `timestamp`
   - `confidence_note`
 - 使用稳定 `turn_id` 实现重试幂等。
+- 状态读取以 `CURRENT -> revisions/<revision_id>/` 为准，保证读取侧原子一致性。
 - 通过 `commit.json` 记录最近一次成功提交锚点。
 - 通过 `checkpoints/v{n}` 保留回滚快照。
 - 两阶段清理生命周期：
@@ -162,6 +163,7 @@ python scripts/validate_state.py --state-root state --session-id <SESSION_ID>
 python scripts/check_state_drift.py --state-root state --session-id <SESSION_ID> --migrate
 python scripts/security_scan_state.py --state-root state
 python scripts/cleanup_sessions.py --state-root state --archive-days 30 --delete-days 90
+python scripts/run_state_tests.py
 ```
 
 ## 测试用例
