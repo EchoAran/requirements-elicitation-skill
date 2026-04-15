@@ -1,141 +1,118 @@
 # State Storage Rules
 
-This document defines the detailed rules for storing, retrieving, and managing state files.
+This document defines file contracts, hard limits, and transaction boundaries.
 
-## File Formats
+## Core Files
 
 ### framework.json
-Complete interview framework state conforming to `assets/interview_framework_schema.json`.
 
-**Example Structure**:
-```json
-{
-  "phase": "runtime",
-  "current_topic_id": "user_requirements",
-  "topics": [...],
-  "open_questions": [...]
-}
-```
+- Must conform to `assets/interview_framework_schema.json`.
+- Must contain:
+  - `schema_version = "2.0.0"`
+  - `session.session_id`
+  - `session.conversation_id`
+  - `session.status`
+- `evidence` must be object array format only:
+  - `{turn_id, excerpt, timestamp, confidence_note}`
 
 ### history.json
-Array of conversation turns with chronological ordering.
 
-**Schema**:
-```json
-[
-  {
-    "turn": 1,
-    "timestamp": "2024-03-23T14:30:52Z",
-    "user_input": "I want to build a campus marketplace app",
-    "agent_response": "That sounds interesting. Can you tell me more about the core problem you're trying to solve?",
-    "framework_snapshot": {
-      "phase": "start",
-      "current_topic_id": null,
-      "topics": [],
-      "open_questions": []
-    }
-  }
-]
-```
-
-**Field Definitions**:
-- `turn`: Sequential turn number (integer)
-- `timestamp`: ISO 8601 timestamp (string)
-- `user_input`: Raw user input (string)
-- `agent_response`: Agent's response (string)
-- `framework_snapshot`: Framework state at end of turn (object)
+- Array of ordered turns.
+- Required turn fields:
+  - `turn` (1..N sequential)
+  - `turn_id` (stable idempotency key)
+  - `session_id`
+  - `timestamp`
+  - `user_input`
+  - `agent_response`
+  - `framework_delta`
+  - `framework_snapshot`
 
 ### metadata.json
-Session metadata and tracking information.
 
-**Schema**:
-```json
-{
-  "session_id": "20240323_143052_A7X9K2",
-  "created_at": "2024-03-23T14:30:52Z",
-  "last_updated": "2024-03-23T14:45:30Z",
-  "last_accessed": "2024-03-23T14:45:30Z",
-  "phase": "runtime",
-  "turn_count": 5,
-  "user_context": "Campus marketplace app requirements",
-  "version": "1.0"
-}
-```
+- Required fields:
+  - `session_id`
+  - `conversation_id`
+  - `created_at`
+  - `last_accessed`
+  - `last_updated`
+  - `state_version`
+  - `schema_version`
+  - `last_turn_id`
+  - `last_successful_commit`
+  - `write_attempt_count`
+  - `truncation_count`
+  - `truncated_fields`
+  - `status` (`active|closed`)
 
-## Storage Rules
+### commit.json
 
-### Directory Structure
-- **Base Path**: `state/sessions/`
-- **Session Path**: `state/sessions/{session_id}/`
-- **Permissions**: Read/write for skill process, read-only for others
+- Last successful transaction pointer.
+- Required fields:
+  - `session_id`
+  - `turn_id`
+  - `state_version`
+  - `schema_version`
+  - `timestamp`
+  - `content_hash`
 
-### File Naming
-- All files use lowercase names with `.json` extension
-- No special characters in filenames
-- Session directories named exactly as session_id
+### conversation_index.json
 
-### Size Limits
-- **Individual File**: 5MB maximum
-- **Session Directory**: 10MB maximum
-- **History File**: 1000 turns maximum (auto-truncate oldest)
+- Global map `{conversation_id: session_id}`.
+- Must be updated atomically with session creation and cleanup transitions.
 
-### Encoding
-- All files: UTF-8 encoding
-- JSON formatting: Pretty-printed with 2-space indentation
-- Line endings: LF (\n) for cross-platform compatibility
+## Directory Rules
 
-## Session ID Generation
+- Base directories:
+  - `state/sessions/`
+  - `state/temp/`
+  - `state/archive/`
+- Transaction temp path: `state/temp/{session_id}/`.
+- Checkpoint path: `state/sessions/{session_id}/checkpoints/v{n}/`.
 
-### Algorithm
-1. Get current timestamp: `YYYYMMDD_HHMMSS`
-2. Generate 6-character random suffix: `[A-Z0-9]{6}`
-3. Combine: `{timestamp}_{suffix}`
-4. Verify uniqueness (check directory existence)
+## Session ID and Path Safety
 
-### Random Suffix Generation
-- Character set: `ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`
-- Length: 6 characters
-- Collision handling: Regenerate if directory exists
+- Session ID format: `^\d{8}_\d{6}_[A-Z0-9]{6}$`.
+- Any session directory name not matching this regex must be rejected.
+- Path joins must be done via safe APIs (never raw string concatenation).
 
-### Examples
-- `20240323_143052_A7X9K2`
-- `20240323_143053_B4K8M1`
-- `20240324_091500_Z9P3L7`
+## Hard Limits
 
-## File Operations
+- `max_user_input_chars`: 20_000
+- `max_evidence_items_per_slot`: 50
+- `max_history_turns`: 1_000
+- `max_history_bytes`: 5_000_000
+- `max_session_bytes`: 10_000_000
 
-### Atomic Writes
-1. Write to temporary file: `{filename}.tmp`
-2. Validate JSON syntax
-3. Rename to final filename
-4. Delete temporary file
+If truncation occurs:
+- increment `metadata.truncation_count`
+- append human-readable reason to `metadata.truncated_fields`
 
-### Read Operations
-1. Check file existence
-2. Read entire file content
-3. Parse JSON with error handling
-4. Validate against schema (if applicable)
+## Transaction Write Rules
 
-### Error Handling
-- **File Not Found**: Treat as new session
-- **JSON Parse Error**: Log and use defaults
-- **Permission Denied**: Log and continue with in-memory state
-- **Disk Full**: Implement emergency cleanup
+1. Serialize all JSON payloads with `json.dump` UTF-8.
+2. Write 3 temp files:
+   - `framework.json.tmp`
+   - `history.json.tmp`
+   - `metadata.json.tmp`
+3. Validate all 3 temp files.
+4. Backup current live files to a new checkpoint version.
+5. Rename temp files to live files.
+6. Write `commit.json`.
+
+If step 3 fails, do not mutate live files.
 
 ## Validation Rules
 
-### Framework Validation
-- Must conform to `interview_framework_schema.json`
-- Required fields: `phase`, `current_topic_id`, `topics`, `open_questions`
-- Phase must be one of: `start`, `runtime`, `complete`
+### Single-file validation
 
-### History Validation
-- Must be array of turn objects
-- Turns must have sequential `turn` numbers
-- Timestamps must be valid ISO 8601
-- Framework snapshots must be valid (optional validation)
+- `framework.json` validates against schema.
+- `history.json` is ordered and has unique `turn_id`.
+- `metadata.json` includes all required operational fields.
 
-### Metadata Validation
-- Session ID must match directory name
-- Timestamps must be valid ISO 8601
-- Version must be semantic version string
+### Cross-file validation
+
+- `session_id` must match across framework, history context, and metadata.
+- `metadata.last_turn_id` must match `history[-1].turn_id`.
+- `framework.current_topic_id` must exist in `framework.topics`.
+- Each `conflicted` slot must have an open contradiction question linked by `related_slot_ref`.

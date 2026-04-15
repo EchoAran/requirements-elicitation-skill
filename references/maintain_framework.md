@@ -35,6 +35,12 @@ Type oriented minimum topic emphasis:
 - internal enterprise tool: roles permissions, integrations, process handoff
 - social content product: identity and relationship graph, content creation and moderation
 - workflow utility product: user task loop, automation boundaries, reliability constraints
+- b2b saas product: tenant model, admin controls, billing packaging, integrations
+- ai copilot or agent product: delegation boundaries, human review checkpoints, evaluation and safety constraints
+- education product: learner and instructor roles, learning path, assessment and feedback
+- platform or infrastructure tool: developer workflow, operability, reliability and incident handling
+- data analytics product: data source lineage, metrics semantics, freshness latency, governance
+- iot or embedded product: device lifecycle, connectivity variability, offline behavior, firmware updates
 
 ## At `runtime`
 

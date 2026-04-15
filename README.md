@@ -31,6 +31,12 @@
 │   ├── topic_dependency_map.md
 │   ├── conflict_resolution.md
 │   └── state_*.md
+├── scripts/
+│   ├── commit_state.py             # 事务式状态提交（tmp + checkpoint + commit.json）
+│   ├── validate_state.py           # 状态文件与跨文件一致性校验
+│   ├── check_state_drift.py        # schema drift 检查与迁移
+│   ├── security_scan_state.py      # 状态文件敏感信息扫描
+│   └── cleanup_sessions.py         # 两阶段归档/删除清理
 └── examples/                       # 输入输出样例
     ├── new_framework_example.md
     ├── fill_framework_example.md
@@ -39,7 +45,11 @@
     ├── generate_speak_example.md
     ├── contradiction_resolution_example.md
     ├── intent_routing_example.md
-    └── summarize_example.md
+    ├── summarize_example.md
+    ├── frequent_topic_switch_example.md
+    ├── refusal_to_answer_example.md
+    ├── conflicting_priorities_example.md
+    └── goal_without_workflow_example.md
 ```
 
 ## 工作方式（核心执行链路）
@@ -57,6 +67,13 @@
 9. 持久化状态  
 
 完成条件满足后，输出最终框架与总结报告，并清理会话状态。
+
+补充说明：
+
+- 已支持更细粒度意图分类（含约束声明、优先级表达、例外场景）
+- 已支持更广的产品类型起始路由（含 B2B SaaS、AI Copilot、教育、平台工具、数据分析、IoT）
+- 完成判定采用“清单 + 分数阈值（coverage/convergence/estimated_completion）”
+- 证据模型支持多条 evidence 链路，便于追溯
 
 ## 如何使用
 
@@ -116,6 +133,23 @@ cd requirements-elicitation-skill
 - `references/state_storage_rules.md`
 - `references/state_lifecycle.md`
 - `references/state_cleanup.md`
+
+补充状态规范：
+
+- 事务提交：先写 `state/temp/{session_id}` 三个 tmp，再统一替换正式文件
+- 提交锚点：每次成功提交写 `commit.json`（含 hash 与版本）
+- 快照恢复：写入前创建 `checkpoints/v{n}`，默认保留最近 3~5 个
+- 两阶段回收：完成后先 `closed`，再按策略归档和延迟删除
+- 幂等写入：每轮使用稳定 `turn_id`，避免 Step 8 重试导致重复追加
+
+## 脚本入口
+
+```bash
+python scripts/validate_state.py --state-root state --session-id <SESSION_ID>
+python scripts/check_state_drift.py --state-root state --session-id <SESSION_ID> --migrate
+python scripts/security_scan_state.py --state-root state
+python scripts/cleanup_sessions.py --state-root state --archive-days 30 --delete-days 90
+```
 
 ## 适用场景
 

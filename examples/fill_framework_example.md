@@ -20,7 +20,7 @@
           "value": null,
           "confidence": "open",
           "status": "open_question",
-          "evidence": null,
+          "evidence": [],
           "last_updated": "turn_3"
         },
         {
@@ -28,7 +28,7 @@
           "value": null,
           "confidence": "open",
           "status": "open_question",
-          "evidence": null,
+          "evidence": [],
           "last_updated": "turn_3"
         }
       ]
@@ -45,15 +45,26 @@
           "value": null,
           "confidence": "open",
           "status": "open_question",
-          "evidence": null,
+          "evidence": [],
           "last_updated": "turn_3"
         }
       ]
     }
   ],
-  "open_questions": []
+  "open_questions": [],
+  "schema_version": "2.0.0",
+  "session": {
+    "session_id": "20260415_000000_ABC123",
+    "conversation_id": "conv_example",
+    "state_version": "2.0.0",
+    "schema_version": "2.0.0",
+    "status": "active",
+    "closed_at": null,
+    "cleanup_pending": false,
+    "cleanup_pending_reason": null
+  }
 }
-````
+```
 
 ### new_user_input
 
@@ -78,7 +89,14 @@ The first version only needs iOS, and students should be able to post an item in
           "value": "iOS only for first version",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "The first version only needs iOS",
+          "evidence": [
+            {
+              "turn_id": "turn_4",
+              "excerpt": "The first version only needs iOS",
+              "timestamp": "2026-04-15T00:00:00Z",
+              "confidence_note": "explicit user statement"
+            }
+          ],
           "last_updated": "turn_4"
         },
         {
@@ -86,7 +104,7 @@ The first version only needs iOS, and students should be able to post an item in
           "value": null,
           "confidence": "open",
           "status": "open_question",
-          "evidence": null,
+          "evidence": [],
           "last_updated": "turn_3"
         }
       ]
@@ -103,12 +121,30 @@ The first version only needs iOS, and students should be able to post an item in
           "value": "Posting an item should take under one minute",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "students should be able to post an item in under one minute",
+          "evidence": [
+            {
+              "turn_id": "turn_4",
+              "excerpt": "students should be able to post an item in under one minute",
+              "timestamp": "2026-04-15T00:00:00Z",
+              "confidence_note": "explicit user statement"
+            }
+          ],
           "last_updated": "turn_4"
         }
       ]
     }
   ],
-  "open_questions": []
+  "open_questions": [],
+  "schema_version": "2.0.0",
+  "session": {
+    "session_id": "20260415_000000_ABC123",
+    "conversation_id": "conv_example",
+    "state_version": "2.0.0",
+    "schema_version": "2.0.0",
+    "status": "active",
+    "closed_at": null,
+    "cleanup_pending": false,
+    "cleanup_pending_reason": null
+  }
 }
 ```

@@ -1,70 +1,92 @@
 # State Management
 
-This document defines the file-based state persistence system for maintaining interview context across execution sessions.
+This document defines the transaction-safe persistence model for stateful interview execution.
 
-## Overview
+## Storage Layout
 
-The state management system enables the skill to maintain continuity across multiple execution sessions by persisting the interview framework and conversation history to files. This is essential when the skill cannot rely on runtime context injection.
-
-## Architecture
-
-### Storage Structure
-```
+```text
 state/
-├── sessions/                    # Session state directory
-│   ├── {session_id}/           # Per-session directory
-│   │   ├── framework.json      # Interview framework state
-│   │   ├── history.json        # Conversation history
-│   │   └── metadata.json       # Session metadata
-│   └── cleanup.log            # Cleanup operation log
-└── temp/                      # Temporary files directory
+├── conversation_index.json                 # {conversation_id: session_id}
+├── sessions/
+│   ├── {session_id}/
+│   │   ├── framework.json
+│   │   ├── history.json
+│   │   ├── metadata.json
+│   │   ├── commit.json                     # last successful commit pointer
+│   │   └── checkpoints/
+│   │       ├── v1/
+│   │       ├── v2/
+│   │       └── ...
+│   └── cleanup.log                         # structured JSONL
+├── temp/
+│   └── {session_id}/                       # transactional temp write area
+└── archive/                                # closed sessions kept for delayed cleanup
 ```
 
-### Session Identification
-- **Session ID Format**: `{timestamp}_{random_suffix}`
-  - `timestamp`: `YYYYMMDD_HHMMSS` (e.g., `20240323_143052`)
-  - `random_suffix`: 6-character alphanumeric string (e.g., `A7X9K2`)
-  - **Example**: `20240323_143052_A7X9K2`
+## Session Identity Rules
 
-### State Components
-1. **Framework State** (`framework.json`): Complete interview framework matching `assets/interview_framework_schema.json`
-2. **Conversation History** (`history.json`): Chronological record of turns
-3. **Session Metadata** (`metadata.json`): Session information and timestamps
+- Session IDs must be system-generated only, with format `{YYYYMMDD_HHMMSS}_{A-Z0-9(6)}`.
+- User input must never participate in session path construction.
+- Runtime must resolve a single active mapping `conversation_id -> session_id` via `conversation_index.json`.
+- If mapping ambiguity exists, runtime must quarantine extra candidates and keep only one active session.
 
-## Operational Flow
+## Transaction Commit Protocol
 
-### State Loading (Step 0)
-1. Check for existing session state files
-2. If found, validate and restore framework and history
-3. If not found or invalid, proceed as new session
-4. Update metadata with last access time
+Every state-changing turn must commit with all-or-nothing semantics:
 
-### State Persistence (Step 8)
-1. After each state-changing operation, save current framework
-2. Append new conversation turn to history
-3. Update metadata timestamps
-4. Use atomic write operations to prevent corruption
+1. Prepare write payload for `framework.json`, `history.json`, `metadata.json`.
+2. Validate payload before write.
+3. Write temp files into `state/temp/{session_id}/`:
+   - `framework.json.tmp`
+   - `history.json.tmp`
+   - `metadata.json.tmp`
+4. If any temp file fails validation, abort commit and keep prior state untouched.
+5. Snapshot current state to `checkpoints/v{n}/` before replacing live files.
+6. Rename temp files atomically into `state/sessions/{session_id}/`.
+7. Write `commit.json` with last successful commit marker.
 
-### State Cleanup (Completion)
-1. After successful summarization, delete entire session directory
-2. Log cleanup operation to `cleanup.log`
-3. Handle cleanup failures gracefully
+`commit.json` required fields:
+- `session_id`
+- `turn_id`
+- `state_version`
+- `schema_version`
+- `timestamp`
+- `content_hash`
 
-## Error Handling
+## Idempotency and Retry Rules
 
-### Recovery Strategies
-- **Framework Corruption**: Reinitialize from schema template
-- **History Corruption**: Continue with empty history
-- **Metadata Corruption**: Use default metadata values
-- **Storage Full**: Implement size limits and cleanup policies
+- Each turn must carry a stable `turn_id`.
+- Before appending to `history.json`, check whether latest `turn_id` already equals incoming `turn_id`.
+- If equal, treat as idempotent retry and skip append.
+- Track retry pressure in `metadata.write_attempt_count`.
 
-### Concurrency Protection
-- Use atomic file operations (write to temp, then rename)
-- Implement retry logic for transient failures
-- Log conflicts but continue execution
+## Snapshot and Recovery
 
-## Implementation References
+- Keep checkpoints for the latest 3 to 5 committed versions.
+- On corruption or migration failure, rollback from latest checkpoint.
+- Recovery order:
+  1. Validate current files
+  2. If invalid, rollback to latest checkpoint
+  3. If no checkpoint exists, initialize a fresh session
 
-- Storage rules: `references/state_storage_rules.md`
-- Lifecycle management: `references/state_lifecycle.md`
-- Cleanup procedures: `references/state_cleanup.md`
+## Two-Phase Cleanup Policy
+
+- On completion, mark session `status=closed` first, do not hard-delete immediately.
+- Keep summary and latest checkpoints for delayed cleanup.
+- Move stale closed sessions to `state/archive/`.
+- Delete only after retention threshold via maintenance job.
+
+## Guardrails
+
+- All persistence must use JSON serialization (`json.dump`) with UTF-8.
+- String concatenation write patterns are not allowed.
+- Enforce hard size limits for input text, evidence list, and history file.
+- Record truncation events in metadata fields (`truncated_fields`, `truncation_count`).
+
+## Tooling Entry Points
+
+- `scripts/commit_state.py`
+- `scripts/validate_state.py`
+- `scripts/check_state_drift.py`
+- `scripts/security_scan_state.py`
+- `scripts/cleanup_sessions.py`

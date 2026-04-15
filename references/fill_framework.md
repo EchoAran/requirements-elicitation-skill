@@ -7,12 +7,18 @@ Use this file to write grounded information into the current interview framework
 Classify the newest user input into one of these intent types before writing slots:
 - explicit requirement
 - exploratory idea
+- constraint declaration
+- priority expression
+- exception or edge-case supplement
 - scope change or correction
 - meta process comment
 
 Routing rules:
 - explicit requirement: fill target slots directly with `confirmed` when wording is explicit
 - exploratory idea: store as tentative or `supported_inference`, then ask confirmation
+- constraint declaration: prioritize constraints slots and run contradiction checks
+- priority expression: update release scope or priority slots and adjust next topic routing
+- exception or edge-case supplement: store conditional branch evidence and ask one trigger clarification
 - scope change or correction: update or replace prior slot values and review structural fit
 - meta process comment: do not fill product slots, adjust interview strategy
 
@@ -26,6 +32,20 @@ Record information using these confidence levels:
 Prefer `confirmed`.
 Use `supported_inference` sparingly.
 
+### Evidence payload rule
+
+Use only structured evidence arrays (legacy string evidence is not allowed).
+Each `evidence` item must include:
+- `turn_id`
+- `excerpt`
+- `timestamp`
+- `confidence_note`
+
+Evidence limits:
+- maximum 50 evidence items per slot
+- truncate oldest low-value evidence first when limit is exceeded
+- record truncation in `metadata.truncated_fields`
+
 ## Filling rules
 
 - Map each new user statement to the smallest appropriate slot.
@@ -35,6 +55,7 @@ Use `supported_inference` sparingly.
 - If the user corrects prior information, replace the old content and mark the latest content as authoritative.
 - If evidence is weak, store it as an open question instead of a filled slot.
 - Record contradictions by setting affected slot status to `conflicted`.
+- When a contradiction is detected, set slot `contradiction_severity` to `low|medium|high`.
 
 ## Information density and follow up depth
 
@@ -61,7 +82,7 @@ Follow up strategy:
 Each filled slot should ideally preserve:
 - value
 - confidence
-- evidence snippet or source note
+- evidence list with at least one `turn_id` and one direct excerpt
 - last updated turn summary
 - optional convergence score and information density when available
 

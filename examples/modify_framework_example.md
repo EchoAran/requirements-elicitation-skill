@@ -17,10 +17,21 @@
       "slots": [
         {
           "name": "must have features",
-          "value": ["item listing", "search", "chat"],
+          "value": [
+            "item listing",
+            "search",
+            "chat"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "previous interview turns",
+          "evidence": [
+            {
+              "turn_id": "turn_6",
+              "excerpt": "previous interview turns",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_6"
         },
         {
@@ -28,7 +39,7 @@
           "value": null,
           "confidence": "open",
           "status": "open_question",
-          "evidence": null,
+          "evidence": [],
           "last_updated": "turn_6"
         },
         {
@@ -36,13 +47,31 @@
           "value": "student user features only",
           "confidence": "supported_inference",
           "status": "filled",
-          "evidence": "previous interview turns",
+          "evidence": [
+            {
+              "turn_id": "turn_6",
+              "excerpt": "previous interview turns",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_6"
         }
       ]
     }
   ],
-  "open_questions": []
+  "open_questions": [],
+  "schema_version": "2.0.0",
+  "session": {
+    "session_id": "20260415_000000_ABC123",
+    "conversation_id": "conv_example",
+    "state_version": "2.0.0",
+    "schema_version": "2.0.0",
+    "status": "active",
+    "closed_at": null,
+    "cleanup_pending": false,
+    "cleanup_pending_reason": null
+  }
 }
 ```
 
@@ -66,10 +95,21 @@ Teachers also need a separate backend to review reports and take down suspicious
       "slots": [
         {
           "name": "must have features",
-          "value": ["item listing", "search", "chat"],
+          "value": [
+            "item listing",
+            "search",
+            "chat"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "previous interview turns",
+          "evidence": [
+            {
+              "turn_id": "turn_6",
+              "excerpt": "previous interview turns",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_6"
         },
         {
@@ -77,7 +117,7 @@ Teachers also need a separate backend to review reports and take down suspicious
           "value": null,
           "confidence": "open",
           "status": "open_question",
-          "evidence": null,
+          "evidence": [],
           "last_updated": "turn_6"
         },
         {
@@ -85,7 +125,14 @@ Teachers also need a separate backend to review reports and take down suspicious
           "value": "student user features only",
           "confidence": "supported_inference",
           "status": "filled",
-          "evidence": "previous interview turns",
+          "evidence": [
+            {
+              "turn_id": "turn_6",
+              "excerpt": "previous interview turns",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_6"
         }
       ]
@@ -104,15 +151,32 @@ Teachers also need a separate backend to review reports and take down suspicious
           "value": "Teachers",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "Teachers also need a separate backend",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "Teachers also need a separate backend",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         },
         {
           "name": "moderation actions",
-          "value": ["review reports", "take down suspicious listings"],
+          "value": [
+            "review reports",
+            "take down suspicious listings"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "review reports and take down suspicious listings",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "review reports and take down suspicious listings",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         },
         {
@@ -120,7 +184,14 @@ Teachers also need a separate backend to review reports and take down suspicious
           "value": "Suspicious listings and user reports",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "review reports and take down suspicious listings",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "review reports and take down suspicious listings",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         },
         {
@@ -128,15 +199,40 @@ Teachers also need a separate backend to review reports and take down suspicious
           "value": null,
           "confidence": "open",
           "status": "open_question",
-          "evidence": null,
+          "evidence": [],
           "last_updated": "turn_7"
         }
       ]
     }
   ],
   "open_questions": [
-    "What actions should teachers be allowed to take in the moderation backend?",
-    "Does the moderation workflow require audit logs or action history?"
-  ]
+    {
+      "id": "oq_0001",
+      "text": "What actions should teachers be allowed to take in the moderation backend?",
+      "kind": "general",
+      "related_slot_ref": null,
+      "severity": null,
+      "status": "open"
+    },
+    {
+      "id": "oq_0002",
+      "text": "Does the moderation workflow require audit logs or action history?",
+      "kind": "general",
+      "related_slot_ref": null,
+      "severity": null,
+      "status": "open"
+    }
+  ],
+  "schema_version": "2.0.0",
+  "session": {
+    "session_id": "20260415_000000_ABC123",
+    "conversation_id": "conv_example",
+    "state_version": "2.0.0",
+    "schema_version": "2.0.0",
+    "status": "active",
+    "closed_at": null,
+    "cleanup_pending": false,
+    "cleanup_pending_reason": null
+  }
 }
 ```

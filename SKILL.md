@@ -1,8 +1,21 @@
 ---
 name: requirements-elicitation
-description: Conduct semi-structured requirements elicitation interviews for product and software ideas. Use when a user wants to discuss an early product concept, clarify goals, users, workflows, constraints, scope, priorities, risks, or open questions through a guided but adaptive interview that can add, remove, and refine topics as the conversation evolves.
+description: >-
+  Conduct semi-structured requirements elicitation interviews for product and
+  software ideas. Use when a user wants to discuss an early product concept,
+  clarify goals, users, workflows, constraints, scope, priorities, risks, or
+  open questions through a guided but adaptive interview that can add, remove,
+  and refine topics as the conversation evolves.
 license: Proprietary
-compatibility: Designed for agent environments that can read bundled markdown and json files. No external network access required.
+version: 2.0.0
+compatibility: >-
+  Designed for agent environments that can read bundled markdown and json
+  files. No external network access required.
+schema_version: 2.0.0
+metadata:
+  created: "2026-04-15"
+  last_reviewed: "2026-04-15"
+  review_interval_days: 30
 ---
 
 # Requirements Elicitation Skill
@@ -18,7 +31,8 @@ This skill uses file-based state persistence to maintain interview context acros
 ### Key Behaviors
 - **Persistence**: Framework and conversation history are saved to files after each state-changing operation
 - **Recovery**: Previous session state is automatically restored when available
-- **Cleanup**: All state files are deleted after successful interview completion and summarization
+- **Idempotency**: Each turn has a stable `turn_id` to avoid duplicate write on retry
+- **Cleanup**: Uses two-phase cleanup (`closed -> archived/deleted`) instead of immediate hard deletion
 
 When needed, load only the files relevant to the current step instead of reading every file at once.
 
@@ -35,6 +49,8 @@ At every turn, execute the following sequence:
 6. Select the current topic.
 7. Generate the next interview utterance.
 8. Persist State: Save updated framework and history (see `references/state_management.md`)
+   - use transactional commit (`state/temp/{session_id}` -> atomic rename)
+   - write `commit.json` after successful commit
 
 Stop the loop only when the completion conditions in `references/checkpoints.md` are satisfied.
 
@@ -60,6 +76,7 @@ Use intent type to determine:
 - whether to mark items as tentative and confirm
 - whether to trigger structural update review
 - whether to adjust interview strategy without filling framework
+- whether to route constraints, priorities, and exception scenarios to the right slots
 
 At `start`, detect product type and initialize from the smallest viable topic template.
 Use default topics only when product type signals are weak.
@@ -154,10 +171,13 @@ Instead:
 3. Output:
    - the final interview framework
    - a structured requirements summary following the required report format
-4. **Clean State**: Delete all session state files (see `references/state_cleanup.md`)
+4. **Close State**: Mark session closed and keep latest checkpoints for delayed cleanup
+   (see `references/state_cleanup.md`)
 
 Completion hard rule:
 - do not mark the interview as `complete` when unresolved high impact contradictions still exist
+- do not mark the interview as `complete` when score based completion threshold in
+  `references/checkpoints.md` is not met
 
 ## Global rules
 

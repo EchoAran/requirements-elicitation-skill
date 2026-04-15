@@ -14,10 +14,22 @@ Use this file to detect, record, and resolve contradictory requirement statement
 When contradiction is found:
 1. mark affected slot `status` as `conflicted`
 2. retain both claims in evidence trail
-3. append one open question prefixed with `[CONTRADICTION]`
+3. classify contradiction severity as `low|medium|high`
+4. append one structured open question item (`kind=contradiction`)
+5. append one structured item to framework `contradictions`
 
 Open question format:
-- `[CONTRADICTION] {claim_a} vs {claim_b}. Which one should be authoritative for first release?`
+- `id`: unique question id
+- `text`: `[CONTRADICTION] {claim_a} vs {claim_b}. Which one should be authoritative for first release?`
+- `kind`: `contradiction`
+- `related_slot_ref`: `{topic_id}.{slot_name}`
+- `severity`: `low|medium|high`
+- `status`: `open`
+
+Severity guidance:
+- `high`: reverses scope, architecture, user group boundary, release commitment, or compliance/security requirement
+- `medium`: changes workflow variants, role responsibilities, or major feature priority
+- `low`: wording differences or minor detail variance with low scope impact
 
 ## Clarification priority
 
@@ -30,7 +42,9 @@ When user clarifies:
 1. set authoritative value in the slot
 2. update confidence based on explicitness
 3. move slot from `conflicted` to `filled` or `open_question`
-4. remove or close related contradiction open question
+4. clear slot `contradiction_severity` or downgrade it when partial ambiguity remains
+5. mark related item in `contradictions` as `resolved` with a resolution note
+6. remove or close related contradiction open question
 
 ## Completion guard
 

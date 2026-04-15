@@ -20,7 +20,14 @@
           "value": "Students need a convenient way to buy and sell second hand items within the same campus community.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "interview turns 1 to 3",
+          "evidence": [
+            {
+              "turn_id": "turn_3",
+              "excerpt": "interview turns 1 to 3",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_3"
         },
         {
@@ -28,7 +35,14 @@
           "value": "A campus focused marketplace app that reduces friction in student to student trading.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "interview turns 1 to 3",
+          "evidence": [
+            {
+              "turn_id": "turn_3",
+              "excerpt": "interview turns 1 to 3",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_3"
         },
         {
@@ -36,7 +50,14 @@
           "value": "No support for off campus public marketplace usage in the first release.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_8",
+          "evidence": [
+            {
+              "turn_id": "turn_8",
+              "excerpt": "turn_8",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_8"
         }
       ]
@@ -53,15 +74,32 @@
           "value": "Students",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_1",
+          "evidence": [
+            {
+              "turn_id": "turn_1",
+              "excerpt": "turn_1",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_1"
         },
         {
           "name": "secondary stakeholders",
-          "value": ["Parents with view access", "Teachers as moderators"],
+          "value": [
+            "Parents with view access",
+            "Teachers as moderators"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_6 and turn_7",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "turn_6 and turn_7",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         },
         {
@@ -69,7 +107,14 @@
           "value": "Students buy and sell items. Parents may view. Teachers handle moderation actions.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_6 and turn_7",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "turn_6 and turn_7",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         }
       ]
@@ -86,23 +131,50 @@
           "value": "A student posts an item, another student browses or searches, they chat, and complete an offline trade on campus.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 and turn_5",
+          "evidence": [
+            {
+              "turn_id": "turn_5",
+              "excerpt": "turn_4 and turn_5",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_5"
         },
         {
           "name": "important supporting scenarios",
-          "value": ["report suspicious listing", "teacher reviews report"],
+          "value": [
+            "report suspicious listing",
+            "teacher reviews report"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_7",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "turn_7",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         },
         {
           "name": "edge cases already identified",
-          "value": ["fraudulent listings", "unsafe off campus transaction attempts"],
+          "value": [
+            "fraudulent listings",
+            "unsafe off campus transaction attempts"
+          ],
           "confidence": "supported_inference",
           "status": "filled",
-          "evidence": "turn_7 and turn_8",
+          "evidence": [
+            {
+              "turn_id": "turn_8",
+              "excerpt": "turn_7 and turn_8",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_8"
         }
       ]
@@ -116,18 +188,39 @@
       "slots": [
         {
           "name": "core required capabilities",
-          "value": ["item listing", "search and browse", "in app chat", "report listing"],
+          "value": [
+            "item listing",
+            "search and browse",
+            "in app chat",
+            "report listing"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 to turn_7",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "turn_4 to turn_7",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         },
         {
           "name": "secondary or optional capabilities",
-          "value": ["parent visibility"],
+          "value": [
+            "parent visibility"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_6",
+          "evidence": [
+            {
+              "turn_id": "turn_6",
+              "excerpt": "turn_6",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_6"
         },
         {
@@ -135,7 +228,14 @@
           "value": "Student trading workflow, basic moderation, and campus only usage.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 to turn_8",
+          "evidence": [
+            {
+              "turn_id": "turn_8",
+              "excerpt": "turn_4 to turn_8",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_8"
         }
       ]
@@ -152,7 +252,14 @@
           "value": "iOS only for the first release",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4",
+          "evidence": [
+            {
+              "turn_id": "turn_4",
+              "excerpt": "turn_4",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_4"
         },
         {
@@ -160,7 +267,14 @@
           "value": "No integrated online payment in the first release",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_5",
+          "evidence": [
+            {
+              "turn_id": "turn_5",
+              "excerpt": "turn_5",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_5"
         },
         {
@@ -168,7 +282,14 @@
           "value": "Trades are expected to happen within campus",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_8",
+          "evidence": [
+            {
+              "turn_id": "turn_8",
+              "excerpt": "turn_8",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_8"
         },
         {
@@ -176,7 +297,14 @@
           "value": "Moderation is required for suspicious listings",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_7",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "turn_7",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         }
       ]
@@ -190,37 +318,92 @@
       "slots": [
         {
           "name": "highest priority needs",
-          "value": ["fast posting flow", "safe campus specific trading"],
+          "value": [
+            "fast posting flow",
+            "safe campus specific trading"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 and turn_8",
+          "evidence": [
+            {
+              "turn_id": "turn_8",
+              "excerpt": "turn_4 and turn_8",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_8"
         },
         {
           "name": "tradeoffs already stated",
-          "value": ["iOS first before broader platform support", "offline transaction instead of integrated payment"],
+          "value": [
+            "iOS first before broader platform support",
+            "offline transaction instead of integrated payment"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 and turn_5",
+          "evidence": [
+            {
+              "turn_id": "turn_5",
+              "excerpt": "turn_4 and turn_5",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_5"
         },
         {
           "name": "success signals or metrics",
-          "value": ["posting an item takes under one minute", "students can complete a basic trade workflow end to end"],
+          "value": [
+            "posting an item takes under one minute",
+            "students can complete a basic trade workflow end to end"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 and turn_9",
+          "evidence": [
+            {
+              "turn_id": "turn_9",
+              "excerpt": "turn_4 and turn_9",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_9"
         }
       ]
     }
   ],
   "open_questions": [
-    "Should parent visibility be part of the first release or a later phase?",
-    "What level of moderation audit history is required?"
-  ]
+    {
+      "id": "oq_0001",
+      "text": "Should parent visibility be part of the first release or a later phase?",
+      "kind": "general",
+      "related_slot_ref": null,
+      "severity": null,
+      "status": "open"
+    },
+    {
+      "id": "oq_0002",
+      "text": "What level of moderation audit history is required?",
+      "kind": "general",
+      "related_slot_ref": null,
+      "severity": null,
+      "status": "open"
+    }
+  ],
+  "schema_version": "2.0.0",
+  "session": {
+    "session_id": "20260415_000000_ABC123",
+    "conversation_id": "conv_example",
+    "state_version": "2.0.0",
+    "schema_version": "2.0.0",
+    "status": "active",
+    "closed_at": null,
+    "cleanup_pending": false,
+    "cleanup_pending_reason": null
+  }
 }
-````
+```
 
 ## Output
 
@@ -243,7 +426,14 @@
           "value": "Students need a convenient way to buy and sell second hand items within the same campus community.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "interview turns 1 to 3",
+          "evidence": [
+            {
+              "turn_id": "turn_3",
+              "excerpt": "interview turns 1 to 3",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_3"
         },
         {
@@ -251,7 +441,14 @@
           "value": "A campus focused marketplace app that reduces friction in student to student trading.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "interview turns 1 to 3",
+          "evidence": [
+            {
+              "turn_id": "turn_3",
+              "excerpt": "interview turns 1 to 3",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_3"
         },
         {
@@ -259,7 +456,14 @@
           "value": "No support for off campus public marketplace usage in the first release.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_8",
+          "evidence": [
+            {
+              "turn_id": "turn_8",
+              "excerpt": "turn_8",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_8"
         }
       ]
@@ -276,15 +480,32 @@
           "value": "Students",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_1",
+          "evidence": [
+            {
+              "turn_id": "turn_1",
+              "excerpt": "turn_1",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_1"
         },
         {
           "name": "secondary stakeholders",
-          "value": ["Parents with view access", "Teachers as moderators"],
+          "value": [
+            "Parents with view access",
+            "Teachers as moderators"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_6 and turn_7",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "turn_6 and turn_7",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         },
         {
@@ -292,7 +513,14 @@
           "value": "Students buy and sell items. Parents may view. Teachers handle moderation actions.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_6 and turn_7",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "turn_6 and turn_7",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         }
       ]
@@ -309,23 +537,50 @@
           "value": "A student posts an item, another student browses or searches, they chat, and complete an offline trade on campus.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 and turn_5",
+          "evidence": [
+            {
+              "turn_id": "turn_5",
+              "excerpt": "turn_4 and turn_5",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_5"
         },
         {
           "name": "important supporting scenarios",
-          "value": ["report suspicious listing", "teacher reviews report"],
+          "value": [
+            "report suspicious listing",
+            "teacher reviews report"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_7",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "turn_7",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         },
         {
           "name": "edge cases already identified",
-          "value": ["fraudulent listings", "unsafe off campus transaction attempts"],
+          "value": [
+            "fraudulent listings",
+            "unsafe off campus transaction attempts"
+          ],
           "confidence": "supported_inference",
           "status": "filled",
-          "evidence": "turn_7 and turn_8",
+          "evidence": [
+            {
+              "turn_id": "turn_8",
+              "excerpt": "turn_7 and turn_8",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_8"
         }
       ]
@@ -339,18 +594,39 @@
       "slots": [
         {
           "name": "core required capabilities",
-          "value": ["item listing", "search and browse", "in app chat", "report listing"],
+          "value": [
+            "item listing",
+            "search and browse",
+            "in app chat",
+            "report listing"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 to turn_7",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "turn_4 to turn_7",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         },
         {
           "name": "secondary or optional capabilities",
-          "value": ["parent visibility"],
+          "value": [
+            "parent visibility"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_6",
+          "evidence": [
+            {
+              "turn_id": "turn_6",
+              "excerpt": "turn_6",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_6"
         },
         {
@@ -358,7 +634,14 @@
           "value": "Student trading workflow, basic moderation, and campus only usage.",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 to turn_8",
+          "evidence": [
+            {
+              "turn_id": "turn_8",
+              "excerpt": "turn_4 to turn_8",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_8"
         }
       ]
@@ -375,7 +658,14 @@
           "value": "iOS only for the first release",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4",
+          "evidence": [
+            {
+              "turn_id": "turn_4",
+              "excerpt": "turn_4",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_4"
         },
         {
@@ -383,7 +673,14 @@
           "value": "No integrated online payment in the first release",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_5",
+          "evidence": [
+            {
+              "turn_id": "turn_5",
+              "excerpt": "turn_5",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_5"
         },
         {
@@ -391,7 +688,14 @@
           "value": "Trades are expected to happen within campus",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_8",
+          "evidence": [
+            {
+              "turn_id": "turn_8",
+              "excerpt": "turn_8",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_8"
         },
         {
@@ -399,7 +703,14 @@
           "value": "Moderation is required for suspicious listings",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_7",
+          "evidence": [
+            {
+              "turn_id": "turn_7",
+              "excerpt": "turn_7",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_7"
         }
       ]
@@ -413,35 +724,90 @@
       "slots": [
         {
           "name": "highest priority needs",
-          "value": ["fast posting flow", "safe campus specific trading"],
+          "value": [
+            "fast posting flow",
+            "safe campus specific trading"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 and turn_8",
+          "evidence": [
+            {
+              "turn_id": "turn_8",
+              "excerpt": "turn_4 and turn_8",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_8"
         },
         {
           "name": "tradeoffs already stated",
-          "value": ["iOS first before broader platform support", "offline transaction instead of integrated payment"],
+          "value": [
+            "iOS first before broader platform support",
+            "offline transaction instead of integrated payment"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 and turn_5",
+          "evidence": [
+            {
+              "turn_id": "turn_5",
+              "excerpt": "turn_4 and turn_5",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_5"
         },
         {
           "name": "success signals or metrics",
-          "value": ["posting an item takes under one minute", "students can complete a basic trade workflow end to end"],
+          "value": [
+            "posting an item takes under one minute",
+            "students can complete a basic trade workflow end to end"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "turn_4 and turn_9",
+          "evidence": [
+            {
+              "turn_id": "turn_9",
+              "excerpt": "turn_4 and turn_9",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_9"
         }
       ]
     }
   ],
   "open_questions": [
-    "Should parent visibility be part of the first release or a later phase?",
-    "What level of moderation audit history is required?"
-  ]
+    {
+      "id": "oq_0001",
+      "text": "Should parent visibility be part of the first release or a later phase?",
+      "kind": "general",
+      "related_slot_ref": null,
+      "severity": null,
+      "status": "open"
+    },
+    {
+      "id": "oq_0002",
+      "text": "What level of moderation audit history is required?",
+      "kind": "general",
+      "related_slot_ref": null,
+      "severity": null,
+      "status": "open"
+    }
+  ],
+  "schema_version": "2.0.0",
+  "session": {
+    "session_id": "20260415_000000_ABC123",
+    "conversation_id": "conv_example",
+    "state_version": "2.0.0",
+    "schema_version": "2.0.0",
+    "status": "active",
+    "closed_at": null,
+    "cleanup_pending": false,
+    "cleanup_pending_reason": null
+  }
 }
 ```
 

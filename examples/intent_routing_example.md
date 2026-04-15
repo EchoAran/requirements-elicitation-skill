@@ -3,7 +3,8 @@
 ## Input
 
 ### user_input
-Maybe we should support online payment later, but for first release we need iOS only.
+Maybe we should support online payment later, but for first release we need iOS only.  
+Also, posting must finish within one minute, except in poor network conditions.
 
 ## Output
 
@@ -17,8 +18,18 @@ Maybe we should support online payment later, but for first release we need iOS 
     },
     {
       "segment": "for first release we need iOS only",
-      "intent": "explicit requirement",
-      "action": "fill constraints slot as confirmed"
+      "intent": "constraint declaration",
+      "action": "fill platform constraint slot as confirmed"
+    },
+    {
+      "segment": "posting must finish within one minute",
+      "intent": "priority expression",
+      "action": "fill first release performance expectation and route next turn to success criteria"
+    },
+    {
+      "segment": "except in poor network conditions",
+      "intent": "exception or edge-case supplement",
+      "action": "record edge condition and ask one follow-up about degraded behavior"
     }
   ]
 }

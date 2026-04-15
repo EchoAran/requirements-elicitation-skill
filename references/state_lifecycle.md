@@ -1,164 +1,66 @@
 # State Lifecycle Management
 
-This document defines the lifecycle of state files from creation to cleanup.
+This document defines operational lifecycle from first turn to delayed deletion.
 
-## Session Lifecycle Phases
+## 1. Session Initialization
 
-### 1. Initialization Phase
-**Trigger**: First execution or when no existing state found
+Trigger:
+- First run with no resolved `conversation_id -> session_id` mapping.
 
-**Actions**:
-1. Generate unique session_id
-2. Create session directory: `state/sessions/{session_id}/`
-3. Initialize empty framework.json with schema defaults
-4. Create empty history.json array
-5. Write initial metadata.json
-6. Log session creation to cleanup.log
+Actions:
+1. Generate `session_id` by system rule.
+2. Create `state/sessions/{session_id}/`.
+3. Initialize `framework.json` with `schema_version=2.0.0`.
+4. Initialize empty `history.json`.
+5. Initialize `metadata.json` with:
+   - `last_turn_id = null`
+   - `last_successful_commit = null`
+   - `write_attempt_count = 0`
+   - `truncation_count = 0`
+   - `truncated_fields = []`
+   - `status = active`
+6. Write `conversation_index.json`.
+7. Create first checkpoint `checkpoints/v1/`.
 
-**Initial Framework State**:
-```json
-{
-  "phase": "start",
-  "current_topic_id": null,
-  "topics": [],
-  "open_questions": []
-}
-```
+## 2. Runtime Commit Cycle
 
-**Initial Metadata**:
-```json
-{
-  "session_id": "...",
-  "created_at": "2024-03-23T14:30:52Z",
-  "last_updated": "2024-03-23T14:30:52Z",
-  "last_accessed": "2024-03-23T14:30:52Z",
-  "phase": "start",
-  "turn_count": 0,
-  "version": "1.0"
-}
-```
+For each turn:
+1. Build deterministic `turn_id`.
+2. Check duplicate (`history[-1].turn_id == turn_id`) to avoid retry pollution.
+3. Execute transactional commit (`scripts/commit_state.py`):
+   - temp write
+   - validation
+   - checkpoint
+   - rename
+   - commit marker update
+4. Run state validation (`scripts/validate_state.py`).
 
-### 2. Runtime Phase
-**Trigger**: After initialization until completion
+## 3. Drift Check and Migration
 
-**Persistence Triggers**:
-- Framework structure changes (add/remove topics, slots)
-- Framework content updates (fill slots, change status)
-- New conversation turns
-- Phase transitions
+At load time:
+1. Compare `metadata.schema_version` with target schema version.
+2. If mismatch, run `scripts/check_state_drift.py --migrate`.
+3. If migration fails, rollback from latest checkpoint and block runtime until valid.
 
-**Update Frequency**:
-- After each user input processing
-- After each framework modification
-- Before generating agent response
+## 4. Completion and Closure
 
-**Metadata Updates**:
-- `last_updated`: Current timestamp
-- `last_accessed`: Current timestamp
-- `turn_count`: Increment on new turns
-- `phase`: Update on phase changes
+When interview reaches complete:
+1. Generate final summary.
+2. Mark `metadata.status = closed`, set `closed_at`.
+3. Keep recent checkpoints for audit and recovery.
+4. Do not hard-delete immediately.
 
-### 3. Completion Phase
-**Trigger**: When interview reaches `complete` phase
+## 5. Archive and Deletion
 
-**Actions**:
-1. Generate final summary (existing behavior)
-2. Mark session as completed in metadata
-3. Initiate cleanup process
-4. Delete session directory
-5. Log cleanup completion
+Maintenance policy:
+- No access >= 30 days: archive session.
+- No access >= 90 days: deletion candidate.
 
-**Completion Metadata Update**:
-```json
-{
-  "phase": "complete",
-  "completed_at": "2024-03-23T15:45:30Z",
-  "cleanup_status": "pending|completed|failed"
-}
-```
+Execution entry:
+- `scripts/cleanup_sessions.py`
 
-## State Recovery Process
+## 6. Failure Recovery
 
-### Recovery Triggers
-- New execution with existing session context
-- Explicit session resumption request
-- Automatic detection of session files
-
-### Recovery Steps
-1. **Locate Session**: Find session directory by ID
-2. **Validate Files**: Check existence and basic integrity
-3. **Load Framework**: Parse and validate framework.json
-4. **Load History**: Parse and validate history.json
-5. **Update Metadata**: Refresh last_accessed timestamp
-6. **Resume Execution**: Continue from loaded state
-
-### Recovery Failure Handling
-- **Invalid Framework**: Reinitialize with empty framework
-- **Corrupt History**: Continue with empty history array
-- **Missing Files**: Treat as new session
-- **Version Mismatch**: Attempt migration or reinitialize
-
-## State Synchronization
-
-### In-Memory vs File State
-- **Primary State**: In-memory objects during execution
-- **Backup State**: File persistence after each operation
-- **Recovery Source**: Files when restarting execution
-
-### Synchronization Rules
-- Always persist after state-changing operations
-- Never read from files during single execution
-- Use files only for cross-execution continuity
-- Validate state consistency on recovery
-
-## Lifecycle Events
-
-### Event Types
-- `session_created`: New session initialization
-- `state_persisted`: Successful state save
-- `session_resumed`: State recovery from files
-- `session_completed`: Interview completion
-- `cleanup_initiated`: Cleanup process start
-- `cleanup_completed`: Successful cleanup
-- `cleanup_failed`: Cleanup error
-
-### Event Logging
-All lifecycle events logged to `state/sessions/cleanup.log`:
-
-```
-2024-03-23T14:30:52Z [session_created] 20240323_143052_A7X9K2
-2024-03-23T14:31:15Z [state_persisted] 20240323_143052_A7X9K2 turn=1
-2024-03-23T15:45:30Z [session_completed] 20240323_143052_A7X9K2
-2024-03-23T15:45:31Z [cleanup_completed] 20240323_143052_A7X9K2
-```
-
-## Error Recovery
-
-### Transient Failures
-- **Disk I/O Errors**: Retry with exponential backoff
-- **Permission Issues**: Log and continue with in-memory state
-- **Concurrent Access**: Retry after random delay
-
-### Permanent Failures
-- **Storage Full**: Emergency cleanup of old sessions
-- **Corruption**: Reinitialize session
-- **Deletion Failed**: Mark for manual cleanup
-
-### Failure Thresholds
-- Max retries: 3 attempts
-- Backoff delay: 100ms, 500ms, 2s
-- Emergency cleanup: Remove sessions >7 days old
-
-## Monitoring and Maintenance
-
-### Health Checks
-- Session directory existence
-- File integrity validation
-- Metadata consistency
-- Storage space monitoring
-
-### Maintenance Tasks
-- Remove sessions older than 7 days
-- Validate and repair corrupted files
-- Compress old history files
-- Generate usage statistics
+- Commit interrupted: recover from latest successful `commit.json`.
+- Partial state corruption: rollback from latest checkpoint.
+- Missing checkpoint: initialize new clean session and mark old as quarantine candidate.

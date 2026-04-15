@@ -20,7 +20,14 @@
           "value": "Students",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "previous interview turns",
+          "evidence": [
+            {
+              "turn_id": "turn_2",
+              "excerpt": "previous interview turns",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_2"
         },
         {
@@ -28,7 +35,14 @@
           "value": "Parents may want visibility",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "parents may also want visibility",
+          "evidence": [
+            {
+              "turn_id": "turn_6",
+              "excerpt": "parents may also want visibility",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_6"
         },
         {
@@ -36,15 +50,33 @@
           "value": null,
           "confidence": "open",
           "status": "open_question",
-          "evidence": null,
+          "evidence": [],
           "last_updated": "turn_6"
         }
       ]
     }
   ],
   "open_questions": [
-    "Who decides which stakeholder needs drive first release priorities?"
-  ]
+    {
+      "id": "oq_0001",
+      "text": "Who decides which stakeholder needs drive first release priorities?",
+      "kind": "general",
+      "related_slot_ref": null,
+      "severity": null,
+      "status": "open"
+    }
+  ],
+  "schema_version": "2.0.0",
+  "session": {
+    "session_id": "20260415_000000_ABC123",
+    "conversation_id": "conv_example",
+    "state_version": "2.0.0",
+    "schema_version": "2.0.0",
+    "status": "active",
+    "closed_at": null,
+    "cleanup_pending": false,
+    "cleanup_pending_reason": null
+  }
 }
 ```
 

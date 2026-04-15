@@ -17,10 +17,21 @@
       "slots": [
         {
           "name": "must have features",
-          "value": ["item listing", "search", "chat"],
+          "value": [
+            "item listing",
+            "search",
+            "chat"
+          ],
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "previous interview turns",
+          "evidence": [
+            {
+              "turn_id": "turn_5",
+              "excerpt": "previous interview turns",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_5"
         },
         {
@@ -28,7 +39,7 @@
           "value": null,
           "confidence": "open",
           "status": "open_question",
-          "evidence": null,
+          "evidence": [],
           "last_updated": "turn_5"
         }
       ]
@@ -45,7 +56,14 @@
           "value": "Students",
           "confidence": "confirmed",
           "status": "filled",
-          "evidence": "previous interview turns",
+          "evidence": [
+            {
+              "turn_id": "turn_2",
+              "excerpt": "previous interview turns",
+              "timestamp": "1970-01-01T00:00:00Z",
+              "confidence_note": "example placeholder"
+            }
+          ],
           "last_updated": "turn_2"
         },
         {
@@ -53,13 +71,24 @@
           "value": null,
           "confidence": "open",
           "status": "open_question",
-          "evidence": null,
+          "evidence": [],
           "last_updated": "turn_2"
         }
       ]
     }
   ],
-  "open_questions": []
+  "open_questions": [],
+  "schema_version": "2.0.0",
+  "session": {
+    "session_id": "20260415_000000_ABC123",
+    "conversation_id": "conv_example",
+    "state_version": "2.0.0",
+    "schema_version": "2.0.0",
+    "status": "active",
+    "closed_at": null,
+    "cleanup_pending": false,
+    "cleanup_pending_reason": null
+  }
 }
 ```
 
