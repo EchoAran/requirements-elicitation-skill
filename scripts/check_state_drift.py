@@ -268,8 +268,8 @@ def main() -> int:
         revision_id = storage_adapter.commit_revision(
             args.session_id, framework, history, metadata, migration_commit
         )
-        metadata["last_successful_commit"]["revision_id"] = revision_id
-        write_json(session_dir / "revisions" / revision_id / "metadata.json", metadata)
+        if isinstance(metadata.get("last_successful_commit"), dict):
+            metadata["last_successful_commit"]["revision_id"] = revision_id
 
         # Keep legacy live files in sync.
         write_json(session_dir / "framework.json", framework)

@@ -53,6 +53,25 @@ Reference implementation:
 - `scripts/state_lib/atomic_ops.py`
 - `scripts/state_lib/doctor.py`
 
+## Design Decisions (Portability/Consistency)
+
+This section documents two portability-oriented decisions used by the current implementation.
+
+### 1) Import strategy for state library modules
+
+- `state_lib` uses package-first imports (for package execution) with script-mode fallback imports.
+- This keeps both integration styles workable:
+  - package mode: host imports modules/functions directly
+  - script mode: host executes `python scripts/<entry>.py`
+- For long-term maintenance, prefer package mode in host integrations.
+
+### 2) Commit consistency for revision metadata
+
+- `revision_id` is written during `commit_revision(...)` itself.
+- `commit.json` and `metadata.last_successful_commit.revision_id` are materialized in the same revision write path.
+- Avoid relying on a second metadata rewrite after `CURRENT` pointer switch.
+- This reduces post-switch race windows and improves cross-host consistency.
+
 ## State Root Resolution
 
 Default:

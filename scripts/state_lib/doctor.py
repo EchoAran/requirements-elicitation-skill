@@ -3,13 +3,22 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from storage_adapter import FileStorageAdapter
-from validate_state import (
-    cross_validate,
-    maybe_jsonschema_validate,
-    validate_history,
-    validate_metadata,
-)
+try:
+    from ..storage_adapter import FileStorageAdapter  # package mode
+    from ..validate_state import (  # package mode
+        cross_validate,
+        maybe_jsonschema_validate,
+        validate_history,
+        validate_metadata,
+    )
+except ImportError:  # pragma: no cover - script mode fallback
+    from storage_adapter import FileStorageAdapter
+    from validate_state import (
+        cross_validate,
+        maybe_jsonschema_validate,
+        validate_history,
+        validate_metadata,
+    )
 
 
 def state_doctor(

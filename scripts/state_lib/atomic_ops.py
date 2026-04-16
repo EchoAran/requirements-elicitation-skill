@@ -6,7 +6,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from storage_adapter import FileStorageAdapter, StateSnapshot
+try:
+    from ..storage_adapter import FileStorageAdapter, StateSnapshot  # package mode
+except ImportError:  # pragma: no cover - script mode fallback
+    from storage_adapter import FileStorageAdapter, StateSnapshot
 
 
 def _now_iso() -> str:
@@ -54,13 +57,8 @@ def state_commit(
     }
     metadata["last_successful_commit"] = commit
     revision_id = adapter.commit_revision(session_id, framework, history, metadata, commit)
-    metadata["last_successful_commit"]["revision_id"] = revision_id
-    session_dir = state_root / "sessions" / session_id
-    with (session_dir / "revisions" / revision_id / "metadata.json").open(
-        "w", encoding="utf-8", newline="\n"
-    ) as f:
-        json.dump(metadata, f, indent=2, ensure_ascii=False)
-        f.write("\n")
+    if isinstance(metadata.get("last_successful_commit"), dict):
+        metadata["last_successful_commit"]["revision_id"] = revision_id
     return revision_id
 
 

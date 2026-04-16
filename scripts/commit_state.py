@@ -390,8 +390,8 @@ def main() -> int:
             args.session_id, framework, history, metadata, commit
         )
         persist_commit_artifact(session_dir, commit, framework, history, metadata)
-        metadata["last_successful_commit"]["revision_id"] = revision_id
-        write_json(session_dir / "revisions" / revision_id / "metadata.json", metadata)
+        if isinstance(metadata.get("last_successful_commit"), dict):
+            metadata["last_successful_commit"]["revision_id"] = revision_id
 
         # 2) best-effort legacy mirror refresh for compatibility/debug only (non-authoritative)
         try:

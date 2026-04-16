@@ -240,6 +240,13 @@ class FileStorageAdapter:
             ]
             next_n = (max(nums) if nums else 0) + 1
             revision_id = f"r{next_n:06d}"
+            commit_with_revision = dict(commit)
+            commit_with_revision["revision_id"] = revision_id
+            metadata_with_revision = dict(metadata)
+            if isinstance(metadata_with_revision.get("last_successful_commit"), dict):
+                lsc = dict(metadata_with_revision["last_successful_commit"])
+                lsc["revision_id"] = revision_id
+                metadata_with_revision["last_successful_commit"] = lsc
             temp_revision = revisions_root / f".{revision_id}.tmp"
             final_revision = revisions_root / revision_id
             if temp_revision.exists():
@@ -247,8 +254,8 @@ class FileStorageAdapter:
             temp_revision.mkdir(parents=True, exist_ok=True)
             self._write_json(temp_revision / "framework.json", framework)
             self._write_json(temp_revision / "history.json", history)
-            self._write_json(temp_revision / "metadata.json", metadata)
-            self._write_json(temp_revision / "commit.json", commit)
+            self._write_json(temp_revision / "metadata.json", metadata_with_revision)
+            self._write_json(temp_revision / "commit.json", commit_with_revision)
             temp_revision.replace(final_revision)
             self._write_text_atomic(session_dir / "CURRENT", revision_id + "\n")
             return revision_id
@@ -275,9 +282,8 @@ class FileStorageAdapter:
         revision_id = self.commit_revision(
             session_id, snapshot.framework, snapshot.history, snapshot.metadata, commit
         )
-        snapshot.metadata["last_successful_commit"]["revision_id"] = revision_id
-        session_dir = self._session_dir(session_id)
-        self._write_json(session_dir / "revisions" / revision_id / "metadata.json", snapshot.metadata)
+        if isinstance(snapshot.metadata.get("last_successful_commit"), dict):
+            snapshot.metadata["last_successful_commit"]["revision_id"] = revision_id
 
     def mark_cleanup_pending(self, session_id: str, reason: str, timestamp: Optional[str] = None) -> None:
         at = timestamp or self._now_iso()
@@ -302,9 +308,8 @@ class FileStorageAdapter:
         revision_id = self.commit_revision(
             session_id, snapshot.framework, snapshot.history, snapshot.metadata, commit
         )
-        snapshot.metadata["last_successful_commit"]["revision_id"] = revision_id
-        session_dir = self._session_dir(session_id)
-        self._write_json(session_dir / "revisions" / revision_id / "metadata.json", snapshot.metadata)
+        if isinstance(snapshot.metadata.get("last_successful_commit"), dict):
+            snapshot.metadata["last_successful_commit"]["revision_id"] = revision_id
 
     def archive_session(self, session_id: str) -> None:
         with self._session_lock(session_id):
