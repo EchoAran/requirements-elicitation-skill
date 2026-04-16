@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from storage_adapter import FileStorageAdapter
+from state_lib.config import resolve_state_root, skill_dir_from_file
 from validate_state import (
     bootstrap_current_revision,
     cross_validate,
@@ -185,13 +186,14 @@ def migrate_metadata_defaults(metadata: Dict[str, Any], session_id: str, target_
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Check and migrate state schema drift")
-    parser.add_argument("--state-root", default="state")
+    parser.add_argument("--state-root", default=None)
     parser.add_argument("--session-id", required=True)
     parser.add_argument("--schema", default="assets/interview_framework_schema.json")
     parser.add_argument("--migrate", action="store_true")
     args = parser.parse_args()
 
-    state_root = Path(args.state_root)
+    skill_dir = skill_dir_from_file(__file__)
+    state_root = resolve_state_root(args.state_root, skill_dir=skill_dir)
     storage_adapter = FileStorageAdapter(state_root)
     schema = load_json(Path(args.schema))
     target_schema_version = (
