@@ -119,7 +119,9 @@ def assert_ok(cp: subprocess.CompletedProcess, name: str) -> None:
 
 
 def main() -> int:
-    with tempfile.TemporaryDirectory(prefix="state-tests-") as tmp:
+    tmp_base = ROOT / ".tmp"
+    tmp_base.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="state-tests-", dir=str(tmp_base)) as tmp:
         tmp_root = Path(tmp)
         state_root = tmp_root / "state"
         work_root = tmp_root / "work"
@@ -242,10 +244,18 @@ def main() -> int:
         assert_ok(cp, "commit_state recovery path")
 
         # Case 4: schema drift migration
-        md_live = state_root / "sessions" / session_id / "metadata.json"
-        metadata = json.loads(md_live.read_text(encoding="utf-8"))
+        current_before_migrate = current_file.read_text(encoding="utf-8").strip()
+        md_rev = (
+            state_root
+            / "sessions"
+            / session_id
+            / "revisions"
+            / current_before_migrate
+            / "metadata.json"
+        )
+        metadata = json.loads(md_rev.read_text(encoding="utf-8"))
         metadata["schema_version"] = "1.1.0"
-        write_json(md_live, metadata)
+        write_json(md_rev, metadata)
         cp = run(
             [
                 sys.executable,
